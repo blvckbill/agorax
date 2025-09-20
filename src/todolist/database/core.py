@@ -48,6 +48,10 @@ class Base(DeclarativeBase):
     def __tablename__(cls):
         return resolve_table_name(cls.__name__)
     
+    def dict(self):
+        """Returns a dict representation of a model"""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    
 def get_db(request: Request) -> Session:
     """Get database session from request state."""
     session = request.state.db

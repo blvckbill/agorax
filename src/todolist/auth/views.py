@@ -39,7 +39,6 @@ auth_router = APIRouter()
 @auth_router.post(
     "/register"
 )
-
 def register(
     user_in: UserCreate,
     db_session: DbSession,
@@ -75,7 +74,6 @@ def register(
 
 
 @auth_router.post("/verify_email")
-
 def verify_email(
     db_session: DbSession, 
     user_in: UserCreate,
@@ -103,7 +101,6 @@ def verify_email(
     raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
 @auth_router.post("/resend-otp")
-
 def resend_otp(db_session: DbSession, user_in: UserCreate, background_tasks: BackgroundTasks):
     """This endpoint resends otp if it expires"""
 
@@ -130,7 +127,6 @@ def resend_otp(db_session: DbSession, user_in: UserCreate, background_tasks: Bac
 
 
 @auth_router.get("/{user_id}")
-
 def get_user(user_id: int, db_session: DbSession):
     """Gets a user."""
     user = get(db_session=db_session, user_id=user_id)
@@ -146,7 +142,6 @@ def get_user(user_id: int, db_session: DbSession):
     "/login",
     response_model=UserAuthResponse
 )
-
 def login(
     user_in: UserLogin,
     db_session: DbSession
@@ -170,7 +165,6 @@ def login(
 #     db_session.close(user) TODO impement logout
 
 @auth_router.post("/forgot-password")
-
 def forgot_password(db_session: DbSession, user_in: UserCreate, background_tasks: BackgroundTasks):
     """This endpoint sends an otp to a user to reset their password"""
     user = get_by_email(db_session=db_session, email=user_in.email)
@@ -193,7 +187,6 @@ def forgot_password(db_session: DbSession, user_in: UserCreate, background_tasks
 
 
 @auth_router.post("/reset-password")
-
 def reset_password(
     db_session: DbSession,
     password_reset: UserPasswordReset,
