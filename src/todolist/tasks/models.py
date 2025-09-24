@@ -5,14 +5,11 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, selec
 from sqlalchemy.orm import relationship
 
 from todolist.database.core import Base
-from todolist.models import TimeStampMixin, NameStr
+from todolist.models import TimeStampMixin, NameStr, Pagination
 from todolist.auth.models import TodolistUser, ToDoListBase
 
 from todolist.database.core import DbSession
 
-from .service import (
-    get_task_count
-)
 
 class Todolist(Base, TimeStampMixin):
     """SQLAlchemy model for the relationship between users and tasks"""
@@ -88,3 +85,15 @@ class TodotaskUpdate(ToDoListBase):
     start_time: time | None = None
     is_completed: bool
     is_starred: bool
+
+
+class TodolistPagination(Pagination):
+    """Pydantic model for paginated todolist results."""
+
+    items: list[TodolistRead] = []
+
+
+class TodotaskPagination(Pagination):
+    """Pydantic model for paginated todotask results."""
+
+    items: list[TodotaskRead] = []

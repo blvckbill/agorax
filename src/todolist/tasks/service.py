@@ -1,5 +1,7 @@
 from fastapi import Depends
 
+
+from sqlalchemy_filters import apply_pagination
 from typing import Annotated
 
 from .models import Todolist, TodolistTask, TodolistCreate, TodotaskCreate, TodolistUpdate, TodotaskUpdate
@@ -85,7 +87,3 @@ def delete_tk(*, db_session, task_id: int):
     db_session.query(TodolistTask).filter(TodolistTask.id == task_id).delete()
     db_session.commit()
 
-
-# def get_task_count(db_session: DbSession, list_id: int):
-#     stmt = select(func.count()).where(TodolistTask.list_id == list_id)
-#     return db_session.scalar(stmt)

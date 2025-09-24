@@ -38,3 +38,10 @@ class ToDoListBase(BaseModel):
             SecretStr: lambda v: v.get_secret_value() if v else None,
         },
     )
+
+
+class Pagination(ToDoListBase):
+    """Pydantic model for paginated results."""
+    itemsPerPage: int
+    page: int
+    total: int

@@ -1,13 +1,21 @@
 import re
-from fastapi import Depends
+
 from contextlib import contextmanager
-from todolist import config
+
+from fastapi import Depends
+
+from pydantic import ValidationError, BaseModel
+
 from starlette.requests import Request
-from typing import Annotated, Any, Generator
+
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase, declared_attr
+
+from todolist import config
 from todolist.database.logging import SessionTracker
+
+from typing import Annotated, Any, Generator
 
 def create_db_engine(connection_string: str):
     """Create a database engine with proper timeout settings.
@@ -63,6 +71,39 @@ def get_db(request: Request) -> Session:
 
 
 DbSession = Annotated[Session, Depends(get_db)]
+
+def get_modelname_by_tabelname(table_fullname: str) -> Any:
+    """Returns the model name of a give table"""
+    return get_class_by_tablename(table_fullname=table_fullname).__name__
+
+
+def get_class_by_tablename(table_fullname: str) -> Any:
+    """Return class reference mapped to table"""
+    
+    def _find_class(name):
+        for mapper in Base.registry.mappers:
+            cls = mapper.class_
+            if hasattr(cls, "__table__"):
+                return cls
+        
+    mapped_name = resolve_table_name(table_fullname)
+    mapped_class = _find_class(mapped_name)
+
+    if not mapped_class:
+        raise ValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("filter",),
+                    "msg": "Model not found. Check the name of your model.",
+                }
+            ],
+            model=BaseModel,
+        )
+
+    return mapped_class
+
+    
 
 @contextmanager
 def get_session() -> Generator[Session]:

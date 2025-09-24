@@ -4,15 +4,19 @@ from fastapi import APIRouter, HTTPException, status
 from starlette.responses import JSONResponse
 
 from todolist.database.core import DbSession
+from todolist.database.service import PaginationParameters, paginate
 from todolist.auth.service import CurrentUser
 
 from .models import (
+    Todolist,
     TodolistTask,
     TodolistCreate,
     TodolistRead,
     TodotaskCreate,
     TodolistUpdate,
-    TodotaskUpdate
+    TodotaskUpdate,
+    TodotaskPagination,
+    TodolistPagination
 )
 
 from .service import (
@@ -40,7 +44,7 @@ def get_list(
     db_session: DbSession,
     list_id:  int
 ):
-    """Retuens a todolist"""
+    """Returns a todolist"""
     todolist = get(db_session=db_session, list_id=list_id)
     if not todolist:
         raise HTTPException(
@@ -50,37 +54,44 @@ def get_list(
     return todolist
 
 
-@task_router.get("/{list_id}/tasks")
-def get_tasks(db_session, list_id: int):
-    """Returns all tasks linked to a Todolist"""
-    tasks = get_tasks(db_session=db_session, list_id=list_id)
-    if not tasks:
-        return JSONResponse({"message":"No tasks yet, Add yout to-dos to track tasks"}, 
-                    status_code=status.HTTP_204_NO_CONTENT
-                )
-    return tasks #TODO paginate
+@task_router.get("/{list_id}/tasks", response_model=TodotaskPagination)
+def get_all_tasks(list_id: int, commons: PaginationParameters):
+    """Returns all tasks linked to a Todolist with pagination"""
+    db_session = commons["db_session"]
+
+    query = db_session.query(TodolistTask).filter(TodolistTask.list_id == list_id)
+
+    return paginate(query, **commons)
 
 
-@task_router.get("/{list_id}/tasks-completed")
-def get_completed_tasks(db_session: DbSession, list_id: int):
+@task_router.get("/{list_id}/tasks-completed", response_model=TodotaskPagination)
+def get_completed_tasks(list_id: int, commons: PaginationParameters):
     """Returns tasks completed for a Todolist"""
-    completed_tasks = get_completed(db_session=db_session, list_id=list_id)
-    return completed_tasks #TODO paginate
+    db_session = commons["db_session"]
+
+    completed_tasks = db_session.query(TodolistTask).filter_by(list_id=list_id, is_completed=True)
+
+    return paginate(completed_tasks, **commons)
 
 
-@task_router.get("/{user_id}/todolists")
-def get_all_todolists(db_session: DbSession, user_id: int):
+@task_router.get("/{user_id}/todolists", response_model=TodolistPagination)
+def get_all_todolists(user_id: int, commons: PaginationParameters):
     """Returns all Todolists created by a User"""
 
-    todolists = get_all(db_session=db_session, user_id=user_id)
-    return todolists
+    db_session = commons["db_session"]
+    todolists = db_session.query(Todolist).filter(Todolist.user_id == user_id)
+
+    return paginate(todolists, **commons)
 
 
-@task_router.get("/starred-tasks")
-def get_starred_tasks(db_session: DbSession):
+@task_router.get("/starred-tasks", response_model=TodotaskPagination)
+def get_starred_tasks(commons: PaginationParameters):
     """Returns all starred tasks"""
-    completed_tasks = get_starred(db_session=db_session)
-    return completed_tasks #TODO paginate
+    db_session = commons["db_session"]
+
+    starred_tasks = db_session.query(TodolistTask).filter(TodolistTask.is_starred == True)
+
+    return paginate(starred_tasks, **commons)
 
 
 @task_router.post(
