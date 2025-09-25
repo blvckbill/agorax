@@ -13,8 +13,8 @@ from sqlalchemy.exc import IntegrityError
 from starlette.requests import Request
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from todolist.auth.models import TodolistUser, UserCreate, OtpCode, OtpModel
-from todolist.config import TODOLIST_JWT_SECRET, TODOLIST_JWT_ALG, OTP_EXPIRY_TIME
+from src.todolist.auth.models import TodolistUser, UserCreate, OtpCode, OtpModel
+from src.todolist.config import TODOLIST_JWT_SECRET, TODOLIST_JWT_ALG, OTP_EXPIRY_TIME
 from .utils import (
     generate_random_string, 
     send_mail

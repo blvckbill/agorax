@@ -1,13 +1,16 @@
+import os
+
 from fastapi_mail import ConnectionConfig
+
+from pathlib import Path
 
 from starlette.config import Config
 from starlette.datastructures import Secret
 from urllib import parse
 
-
-
-config = Config(".env")
-
+BASE_DIR = Path(__file__).resolve().parent.parent 
+ROOT_DIR = BASE_DIR.parent 
+config = Config(ROOT_DIR / ".env")
 
 #jwt
 TODOLIST_JWT_SECRET = config("TODOLIST_JWT_SECRET", default=None)
@@ -46,3 +49,9 @@ conf = ConnectionConfig(
     MAIL_STARTTLS = True,
     MAIL_SSL_TLS = False,
 )
+
+# static files
+DEFAULT_STATIC_DIR = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), os.path.join("static", "dispatch", "dist")
+)
+STATIC_DIR = config("STATIC_DIR", default=DEFAULT_STATIC_DIR)

@@ -3,9 +3,9 @@ from fastapi import APIRouter, HTTPException, status
 
 from starlette.responses import JSONResponse
 
-from todolist.database.core import DbSession
-from todolist.database.service import PaginationParameters, paginate
-from todolist.auth.service import CurrentUser
+from src.todolist.database.core import DbSession
+from src.todolist.database.service import PaginationParameters, paginate
+from src.todolist.auth.service import CurrentUser
 
 from .models import (
     Todolist,

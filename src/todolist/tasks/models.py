@@ -4,11 +4,11 @@ from datetime import date, time
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, select, func, Date, Time
 from sqlalchemy.orm import relationship
 
-from todolist.database.core import Base
-from todolist.models import TimeStampMixin, NameStr, Pagination
-from todolist.auth.models import TodolistUser, ToDoListBase
+from src.todolist.database.core import Base
+from src.todolist.models import TimeStampMixin, NameStr, Pagination
+from src.todolist.auth.models import TodolistUser, ToDoListBase
 
-from todolist.database.core import DbSession
+from src.todolist.database.core import DbSession
 
 
 class Todolist(Base, TimeStampMixin):

@@ -12,8 +12,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase, declared_attr
 
-from todolist import config
-from todolist.database.logging import SessionTracker
+from src.todolist import config
+from src.todolist.database.logging import SessionTracker
 
 from typing import Annotated, Any, Generator
 
@@ -46,7 +46,7 @@ SessionLocal = sessionmaker(bind=engine)
 
 def resolve_table_name(name):
     """Resolve table names for their mapped names"""
-    names = re.split("?=[A-Z]", name)
+    names = re.split("(?=[A-Z])", name)
     return "_".join([x.lower() for x in names if x])
     
 
@@ -106,7 +106,7 @@ def get_class_by_tablename(table_fullname: str) -> Any:
     
 
 @contextmanager
-def get_session() -> Generator[Session]:
+def get_session():
     """Context manager to ensure session is closed after use"""
     session = SessionLocal()
     session_id = SessionTracker.track_session(session, context="context_manager")

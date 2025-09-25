@@ -7,7 +7,7 @@ from pydantic import EmailStr
 
 from starlette.responses import JSONResponse
 
-from todolist.config import conf
+from src.todolist.config import conf
 
 def generate_random_string(length: int):
     """generates a random string of length length"""

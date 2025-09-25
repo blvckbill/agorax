@@ -6,9 +6,9 @@ from pydantic import EmailStr, field_validator, ValidationError
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import Column, String, Integer, LargeBinary, Text, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from todolist.models import TimeStampMixin, ToDoListBase, NameStr
-from todolist.database.core import Base
-from todolist.config import (
+from src.todolist.models import TimeStampMixin, ToDoListBase, NameStr
+from src.todolist.database.core import Base
+from src.todolist.config import (
     TODOLIST_JWT_ALG,
     TODOLIST_JWT_EXP,
     TODOLIST_JWT_SECRET
@@ -32,7 +32,7 @@ class TodolistUser(Base, TimeStampMixin):
     is_verified = Column(Boolean, default=False)
 
     otp = relationship("OtpModel", back_populates="user", uselist=False)
-    task = relationship("TodolistuserTask", back_populates="user")
+    todolist = relationship("Todolist", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password: str):
         """Set a user password before saving to the db"""

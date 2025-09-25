@@ -28,8 +28,8 @@ from .service import (
     send_otp_user
 )
 
-from todolist.database.core import DbSession
-from todolist.auth.service import CurrentUser
+from src.todolist.database.core import DbSession
+from src.todolist.auth.service import CurrentUser
 
 
 log = logging.getLogger(__name__)
