@@ -1,6 +1,6 @@
 import bcrypt
 from jose import jwt
-
+import logging
 from pydantic import EmailStr, field_validator, ValidationError
 
 from datetime import datetime, timezone, timedelta
@@ -14,7 +14,7 @@ from src.todolist.config import (
     TODOLIST_JWT_SECRET
 )
 
-
+log = logging.getLogger(__name__)
 def hash_password(password: str):
     """Hash a password using bcrypt"""
     pw = password.encode("utf-8")
@@ -43,6 +43,7 @@ class TodolistUser(Base, TimeStampMixin):
     def verify_password(self, password: str) -> bool:
         """Check if provided password matches hashed password"""
         if not password or not self.password:
+            log.info(f"verify_password failed: password={password!r}, self.password={self.password!r}")
             return False
         return bcrypt.checkpw(password.encode("utf-8"), self.password)
     
@@ -77,12 +78,22 @@ class UserCreate(ToDoListBase):
     first_name: NameStr
     last_name: NameStr
 
-    @field_validator("password", mode="before")
-    @classmethod
-    def hash(cls, v):
-        """hash password before storing"""
-        return hash_password(str(v))
+    # @field_validator("password", mode="before")
+    # @classmethod
+    # def hash(cls, v):
+    #     """hash password before storing"""
+    #     return hash_password(str(v))
 
+
+class UserRead(ToDoListBase):
+    """Pydabtic model to read User."""
+    id: int
+    email: EmailStr
+    first_name: str
+    last_name: str
+    is_verified: bool
+    created_at: datetime
+    updated_at: datetime
 
 class OtpCode(ToDoListBase):
     """Pydantic model for user otp"""
@@ -108,6 +119,7 @@ class UserLogin(ToDoListBase):
         """Ensure password field is not empty"""
         if not v:
             raise ValidationError("password field can not be empty")
+        return v
 
 
 class UserAuthResponse(ToDoListBase):

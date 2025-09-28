@@ -19,7 +19,7 @@ class Todolist(Base, TimeStampMixin):
     title = Column(String, nullable=False)
 
     user = relationship("TodolistUser", back_populates="todolist")
-    task = relationship("TodolistTasks", back_populates="todolist", cascade="all, delete-orphan")
+    task = relationship("TodolistTask", back_populates="todolist", cascade="all, delete-orphan")
 
 
 
@@ -40,7 +40,6 @@ class TodolistTask(Base, TimeStampMixin):
 class TodolistCreate(ToDoListBase):
     """Pydaantic model for user todolist"""
 
-    id: int
     title: str
 
 class TodolistRead(ToDoListBase):

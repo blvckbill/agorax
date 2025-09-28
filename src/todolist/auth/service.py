@@ -39,45 +39,66 @@ def create(*, db_session, user_in: UserCreate) -> TodolistUser:
     """Creates a new TodoList User"""
 
     user = TodolistUser(
-        **user_in.model_dump(exclude={"password"}),
-        password=user_in.password
+        **user_in.model_dump(exclude={"password"})
     )
+    user.set_password(user_in.password)
 
     db_session.add(user)
-    db_session.commit()
 
     return user
 
 
 def send_otp_user(*, db_session, user, background_tasks: BackgroundTasks):
-    otp_code =  generate_random_string(5)
-    otp_expires = datetime.now(timezone.utc) + timedelta(seconds=OTP_EXPIRY_TIME).timestamp()
+    otp_code = generate_random_string(5)
 
-    # Check if user already has an OTP record
-    otp_instance = db_session.query(OtpModel).filter(OtpModel.user_id == user.id).first()
+    otp_expires = datetime.now(timezone.utc) + timedelta(seconds=OTP_EXPIRY_TIME)
 
-    if otp_instance:
-        # Update existing OTP
-        otp_instance.otp_code = otp_code
-        otp_instance.otp_expires = otp_expires
-        otp_instance.is_used = False
-    else:
-        # Create a new OTP record
-        otp_instance = OtpModel(
-            otp_code=otp_code,
-            otp_expires=otp_expires,
-            user=user,
+    try:
+        # Check if user already has an OTP record
+        otp_instance = (
+            db_session.query(OtpModel)
+            .filter(OtpModel.user_id == user.id)
+            .first()
         )
-        db_session.add(otp_instance)
-    
-    db_session.commit()
 
-    background_tasks.add_tasks(
-        send_mail,
-        email=user.email,
-        subject="One-Time Password (OTP) for ToDoList App",
-        body=f"Hello {user.first_name}, your OTP is {otp_code}. It expires in {OTP_EXPIRY_TIME} seconds. Do not share it with anyone."
-    )
+        if otp_instance:
+            log.info(f"Updating OTP for user_id={user.id}")
+            otp_instance.otp_code = otp_code
+            otp_instance.otp_expires = otp_expires
+            otp_instance.is_used = False
+        else:
+            log.info(f"Creating new OTP for user_id={user.id}")
+            otp_instance = OtpModel(
+                otp_code=otp_code,
+                otp_expires=otp_expires,
+                user=user,
+            )
+            db_session.add(otp_instance)
+
+        db_session.commit()
+        log.info(f"OTP {otp_code} committed to DB for user_id={user.id}")
+
+    except Exception as e:
+        db_session.rollback()
+        log.error(f"Failed to create OTP for user_id={user.id}: {e}", exc_info=True)
+        raise
+
+    try:
+        # Add background task for sending mail
+        background_tasks.add_task(
+            send_mail,
+            email=user.email,
+            subject="One-Time Password (OTP) for ToDoList App",
+            body=(
+                f"Hello {user.first_name}, your OTP is {otp_code}. "
+                f"It expires in {OTP_EXPIRY_TIME} seconds. Do not share it with anyone."
+            ),
+        )
+        log.info(f"Queued OTP email for user_id={user.id}, email={user.email}")
+
+    except Exception as e:
+        log.error(f"Failed to queue OTP email for user_id={user.id}: {e}", exc_info=True)
+        raise
 
     return otp_code
 

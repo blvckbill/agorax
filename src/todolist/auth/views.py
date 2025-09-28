@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from .models import (
     UserCreate,
     TodolistUser,
-    UserInfo,
+    UserRead,
     UserLogin,
     UserAuthResponse,
     OtpCode,
@@ -36,42 +36,43 @@ log = logging.getLogger(__name__)
 
 auth_router = APIRouter()
 
-@auth_router.post(
-    "/register"
-)
+@auth_router.post("/register")
 def register(
     user_in: UserCreate,
     db_session: DbSession,
     background_tasks: BackgroundTasks
 ):
     """This endpoint creates a TodoList user"""
-    user = get_by_email(db_session=db_session, email=user_in.email)
-    if user:
+    if get_by_email(db_session=db_session, email=user_in.email):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=[
-                    {
-                    "msg": "A user with this email already exists.",
-                    "loc": "email",
-                }
-            ]
+            detail=[{"msg": "A user with this email already exists.", "loc": "email"}]
         )
+
     user = create(db_session=db_session, user_in=user_in)
+    user.is_verified = True
+    db_session.commit()
 
-    #send otp to user mail after creation for verification
-    try:
-        send_otp_user(
-            db_session=db_session, user=user, background_tasks=background_tasks
-        )
-    except Exception as e:
-        log.error(f"User created but failed to send OTP email")
-        user.is_verified = False
+    # try:
+    #     send_otp_user(
+    #         db_session=db_session, user=user, background_tasks=background_tasks
+    #     )
+    #     # OTP succeeded → commit user
+    #     db_session.commit()
 
-        db_session.commit()
+    # except Exception:
+    #     # OTP failed → rollback user creation
+    #     log.error("User registration failed: OTP could not be sent.")
+    #     db_session.rollback()
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail=[{"msg": "Failed to send OTP. Please try again later."}]
+    #     )  #TODO implement otp
 
-    return JSONResponse({"detail":"User registered successfully, Please verify via OTP"},
-        status_code=status.HTTP_201_CREATED)
-
+    return JSONResponse(
+        {"detail": "User registered successfully."},
+        status_code=status.HTTP_201_CREATED
+    )
 
 @auth_router.post("/verify_email")
 def verify_email(
@@ -126,7 +127,7 @@ def resend_otp(db_session: DbSession, user_in: UserCreate, background_tasks: Bac
         status_code=status.HTTP_201_CREATED)
 
 
-@auth_router.get("/{user_id}")
+@auth_router.get("/{user_id}", response_model=UserRead)
 def get_user(user_id: int, db_session: DbSession):
     """Gets a user."""
     user = get(db_session=db_session, user_id=user_id)
