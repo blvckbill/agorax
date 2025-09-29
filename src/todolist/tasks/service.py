@@ -4,8 +4,15 @@ from fastapi import Depends
 from sqlalchemy_filters import apply_pagination
 from typing import Annotated
 
-from .models import Todolist, TodolistTask, TodolistCreate, TodotaskCreate, TodolistUpdate, TodotaskUpdate
-
+from .models import (
+    Todolist,
+    TodolistTask,
+    TodolistCreate,
+    TodotaskCreate,
+    TodolistUpdate,
+    TodotaskUpdate,
+    TodolistMembers
+)
 def get(*, db_session, list_id: int) -> Todolist:
     """Returns a Todo list"""
     return db_session.query(Todolist).filter(Todolist.id == list_id)
@@ -37,6 +44,16 @@ def create_list(*, db_session, list_in: TodolistCreate, current_user) -> Todolis
     db_session.commit()
     db_session.refresh(todolist)
 
+    membership = TodolistMembers(
+        list_id = todolist.id,
+        user_id = current_user.id,
+        role = "owner"
+    )
+
+    db_session.add(membership)
+    db_session.commit()
+    db_session.refresh(membership)
+    
     return todolist
 
 def add_task(*, db_session, task_in: TodotaskCreate, todolist) -> TodolistTask:
@@ -87,3 +104,4 @@ def delete_tk(*, db_session, task_id: int):
     db_session.query(TodolistTask).filter(TodolistTask.id == task_id).delete()
     db_session.commit()
 
+def get_current_role(*, db_session, list_id: int):

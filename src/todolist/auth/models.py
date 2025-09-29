@@ -33,6 +33,7 @@ class TodolistUser(Base, TimeStampMixin):
 
     otp = relationship("OtpModel", back_populates="user", uselist=False)
     todolist = relationship("Todolist", back_populates="user", cascade="all, delete-orphan")
+    memberships = relationship("TodolistMembers", back_populates="user")
 
     def set_password(self, password: str):
         """Set a user password before saving to the db"""

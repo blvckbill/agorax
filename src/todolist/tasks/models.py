@@ -1,7 +1,7 @@
 
 from datetime import date, time
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, select, func, Date, Time
+from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, select, func, Date, Time, Enum
 from sqlalchemy.orm import relationship
 
 from src.todolist.database.core import Base
@@ -20,7 +20,7 @@ class Todolist(Base, TimeStampMixin):
 
     user = relationship("TodolistUser", back_populates="todolist")
     task = relationship("TodolistTask", back_populates="todolist", cascade="all, delete-orphan")
-
+    members = relationship("TodolistMembers", back_populates="todolist")
 
 
 class TodolistTask(Base, TimeStampMixin):
@@ -36,6 +36,17 @@ class TodolistTask(Base, TimeStampMixin):
     is_starred = Column(Boolean, default=False)
 
     todolist = relationship("Todolist", back_populates="task")
+
+class TodolistMembers(Base, TimeStampMixin):
+    """SQLAlchemy model that allows multiple users access to a Todolist"""
+
+    id = Column(Integer, primary_key=True)
+    list_id = Column(Integer, ForeignKey("todolist.id"))
+    user_id = Column(Integer, ForeignKey("todolist_user.id"))
+    role = Column(Enum("owner", "viewer", "editor", name="role_enum"), default="editor")
+
+    todolist = relationship("Todolist", back_populates="members")
+    user = relationship("TodolistUser", back_populates="memberships")
 
 class TodolistCreate(ToDoListBase):
     """Pydaantic model for user todolist"""

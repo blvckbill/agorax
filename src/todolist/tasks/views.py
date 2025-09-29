@@ -3,9 +3,11 @@ from fastapi import APIRouter, HTTPException, status
 
 from starlette.responses import JSONResponse
 
+from src.todolist.permissions import MembershipPermission
 from src.todolist.database.core import DbSession
 from src.todolist.database.service import PaginationParameters, paginate
 from src.todolist.auth.service import CurrentUser
+from src.todolist.auth.models import TodolistUser
 
 from .models import (
     Todolist,
@@ -16,7 +18,8 @@ from .models import (
     TodolistUpdate,
     TodotaskUpdate,
     TodotaskPagination,
-    TodolistPagination
+    TodolistPagination,
+    TodolistMembers
 )
 
 from .service import (
@@ -164,3 +167,50 @@ def delete_task(db_session: DbSession, task_id: int):
             detail=[{"msg": "A Todotask with this id does not exist."}],
         )
     delete_tk(db_session=db_session, task_id=task_id)
+
+
+#==================== Views for multi user on a todolist ==========================
+
+@task_router.post("/{list_id}/invite-user")
+def invite_user(
+    db_session: DbSession, 
+    list_id: int, 
+    invitee_id:int, 
+    current_user: CurrentUser, 
+    role: str
+    permission: 
+    ):
+    """Invite a new user to the todolist (owners only)."""
+
+    # At this point, permission is guaranteed ✅
+    # membership contains current_user's membership info if needed
+
+    existing_member = (
+        db.query(TodlolistMembers)
+        .filter_by(list_id=list_id, user_id=invitee_id)
+        .first()
+    )
+    if existing_member:
+        raise HTTPException(
+            status_code=400,
+            detail="User is already a member of this list"
+        )
+
+    invitee = db.query(TodolistUser).filter_by(id=invitee_id).first()
+    if not invitee:
+        raise HTTPException(status_code=404, detail="Invitee not found")
+
+    new_member = TodlolistMembers(
+        list_id=list_id,
+        user_id=invitee_id,
+        role=role
+    )
+    db.add(new_member)
+    db.commit()
+    db.refresh(new_member)
+
+    return {
+        "msg": f"User {invitee.email} invited as {role}",
+        "member_id": new_member.id,
+        "role": new_member.role
+    }
