@@ -1,9 +1,18 @@
 
 from fastapi import APIRouter, HTTPException, status
 
+from sqlalchemy import case
+
 from starlette.responses import JSONResponse
 
-from src.todolist.permissions import MembershipPermission
+from src.todolist.permissions import (
+    InvitePermission,
+    AddPermission,
+    EditPermission,
+    DeletePermission,
+    RemovePermission,
+    ViewPermission
+)
 from src.todolist.database.core import DbSession
 from src.todolist.database.service import PaginationParameters, paginate
 from src.todolist.auth.service import CurrentUser
@@ -23,7 +32,7 @@ from .models import (
 )
 
 from .service import (
-    get,
+    get_user_list,
     get_all,
     get_completed,
     get_starred,
@@ -39,26 +48,21 @@ from .service import (
 task_router = APIRouter()
 
 
-@task_router.get(
-        "/{list_id}",
-        response_model= TodolistRead
-)
+@task_router.get("/{list_id}", response_model=TodolistRead)
 def get_list(
     db_session: DbSession,
-    list_id:  int
+    list_id: int,
+    current_user: CurrentUser,
+    permission: ViewPermission,
 ):
-    """Returns a todolist"""
-    todolist = get(db_session=db_session, list_id=list_id)
+    todolist = get_user_list(db_session=db_session, list_id=list_id, user_id=current_user.id)
     if not todolist:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"message":"List not found"}
-        )
+        raise HTTPException(status_code=404, detail={"message": "List not found"})
     return todolist
 
 
 @task_router.get("/{list_id}/tasks", response_model=TodotaskPagination)
-def get_all_tasks(list_id: int, commons: PaginationParameters):
+def get_all_tasks(list_id: int, commons: PaginationParameters, permission: ViewPermission):
     """Returns all tasks linked to a Todolist with pagination"""
     db_session = commons["db_session"]
 
@@ -68,31 +72,44 @@ def get_all_tasks(list_id: int, commons: PaginationParameters):
 
 
 @task_router.get("/{list_id}/tasks-completed", response_model=TodotaskPagination)
-def get_completed_tasks(list_id: int, commons: PaginationParameters):
+def get_completed_tasks(list_id: int, commons: PaginationParameters, current_user: CurrentUser, permission: ViewPermission):
     """Returns tasks completed for a Todolist"""
     db_session = commons["db_session"]
 
-    completed_tasks = db_session.query(TodolistTask).filter_by(list_id=list_id, is_completed=True)
+    completed_tasks = db_session.query(TodolistTask).filter_by(list_id=list_id, user_id=current_user.id, is_completed=True)
 
     return paginate(completed_tasks, **commons)
 
 
 @task_router.get("/{user_id}/todolists", response_model=TodolistPagination)
-def get_all_todolists(user_id: int, commons: PaginationParameters):
-    """Returns all Todolists created by a User"""
+def get_all_todolists(user_id: int, commons: PaginationParameters, permission: ViewPermission):
+    """Returns all Todolists a user has access to (owner or member), including their role."""
 
     db_session = commons["db_session"]
-    todolists = db_session.query(Todolist).filter(Todolist.user_id == user_id)
 
-    return paginate(todolists, **commons)
+    user_role = case(
+        (Todolist.user_id == user_id, "owner"), 
+        else_=TodolistMembers.role           
+    ).label("user_role")
+
+    query = (
+        db_session.query(Todolist, user_role)
+        .outerjoin(TodolistMembers, Todolist.id == TodolistMembers.list_id)
+        .filter(
+            (Todolist.user_id == user_id) | (TodolistMembers.user_id == user_id)
+        )
+        .distinct()
+    )
+
+    return paginate(query, **commons)
 
 
 @task_router.get("/starred-tasks", response_model=TodotaskPagination)
-def get_starred_tasks(commons: PaginationParameters):
+def get_starred_tasks(commons: PaginationParameters, current_user: CurrentUser, permission: ViewPermission):
     """Returns all starred tasks"""
     db_session = commons["db_session"]
 
-    starred_tasks = db_session.query(TodolistTask).filter(TodolistTask.is_starred == True)
+    starred_tasks = db_session.query(TodolistTask).filter_by(user_id=current_user.id, is_starred = True)
 
     return paginate(starred_tasks, **commons)
 
@@ -107,33 +124,35 @@ def create_todolist(db_session: DbSession, list_in: TodolistCreate, current_user
 
 
 @task_router.post("/{list_id}/add-task")
-def add_tasks(db_session: DbSession, task_in: TodotaskCreate, list_id: int):
-    """Adds a new task to Todolist"""
-    todolist = get(db_session=db_session, list_id=list_id)
+def add_tasks(
+    db_session: DbSession,
+    list_id: int,
+    task_in: TodotaskCreate,
+    current_user: CurrentUser,
+    permission: AddPermission,
+):
+    todolist = get_user_list(db_session=db_session, list_id=list_id, user_id=current_user.id)
     if not todolist:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"message":"List not found"}
-        )
+        raise HTTPException(status_code=404, detail={"message": "List not found"})
     
-    return add_task(db_session=db_session, task_in=task_in, todolist= todolist)
+    return add_task(db_session=db_session, task_in=task_in, todolist=todolist, current_user=current_user.id)
 
 
 @task_router.put("/{list_id}/update-list")
-def update_todolist(db_session: DbSession, todolist_in: TodolistUpdate, list_id: int):
+def update_todolist(db_session: DbSession, todolist_in: TodolistUpdate, list_id: int, current_user: CurrentUser, permission: EditPermission):
     """Updates a list"""
-    todolist = get(db_session=db_session, list_id=list_id)
+    todolist = get_user_list(db_session=db_session, list_id=list_id, user_id=current_user.id)
     if not todolist:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=404,
             detail={"message":"List not found"}
         )
     
     return update_list(db_session=db_session, todolist=todolist, todolist_in=todolist_in)
 
 
-@task_router.put("/{task_id}/update-list")
-def update_todotask(db_session: DbSession, todotask_in: TodotaskUpdate, task_id: int):
+@task_router.put("/{task_id}/update-task")
+def update_todotask(db_session: DbSession, todotask_in: TodotaskUpdate, task_id: int, current_user: CurrentUser, permission: EditPermission):
     """Updates a task"""
     todotask = db_session.query(TodolistTask).filter_by(id=task_id).first()
     if not todotask:
@@ -146,9 +165,9 @@ def update_todotask(db_session: DbSession, todotask_in: TodotaskUpdate, task_id:
 
 
 @task_router.delete("/{list_id}/delete-list", response_model=None)
-def delete_list(db_session: DbSession, list_id: int):
+def delete_list(db_session: DbSession, list_id: int,  current_user: CurrentUser, permission: DeletePermission):
     """Delete a List."""
-    todolist = get(db_session=db_session, list_id=list_id)
+    todolist = get_user_list(db_session=db_session, list_id=list_id, user_id=current_user.id)
     if not todolist:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -158,7 +177,7 @@ def delete_list(db_session: DbSession, list_id: int):
 
 
 @task_router.delete("/{task_id}/delete-task", response_model=None)
-def delete_task(db_session: DbSession, task_id: int):
+def delete_task(db_session: DbSession, task_id: int,  permission: DeletePermission):
     """Delete a Task."""
     todotask= db_session.query(TodolistTask).filter_by(id=task_id).first()
     if not todotask:
@@ -177,40 +196,68 @@ def invite_user(
     list_id: int, 
     invitee_id:int, 
     current_user: CurrentUser, 
-    role: str
-    permission: 
+    role: str,
+    permission: InvitePermission
     ):
     """Invite a new user to the todolist (owners only)."""
 
-    # At this point, permission is guaranteed ✅
-    # membership contains current_user's membership info if needed
-
     existing_member = (
-        db.query(TodlolistMembers)
+        db_session.query(TodolistMembers)
         .filter_by(list_id=list_id, user_id=invitee_id)
         .first()
     )
     if existing_member:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is already a member of this list"
         )
 
-    invitee = db.query(TodolistUser).filter_by(id=invitee_id).first()
+    invitee = db_session.query(TodolistUser).filter_by(id=invitee_id).first()
     if not invitee:
         raise HTTPException(status_code=404, detail="Invitee not found")
 
-    new_member = TodlolistMembers(
+    new_member = TodolistMembers(
         list_id=list_id,
         user_id=invitee_id,
         role=role
     )
-    db.add(new_member)
-    db.commit()
-    db.refresh(new_member)
+    db_session.add(new_member)
+    db_session.commit()
+    db_session.refresh(new_member)
 
     return {
         "msg": f"User {invitee.email} invited as {role}",
         "member_id": new_member.id,
         "role": new_member.role
+    }
+
+
+@task_router.post("/{list_id}/remove-user")
+def remove_user(
+    db_session: DbSession, 
+    list_id: int, 
+    user_id:int, # user to be removed
+    current_user: CurrentUser, 
+    permission: RemovePermission
+    ):
+    """Remove a user to the todolist (owners only)."""
+
+    membership = (
+        db_session.query(TodolistMembers)
+        .filter_by(list_id=list_id, user_id=user_id)
+        .first()
+    )
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not a member of this list"
+        )
+
+    db_session.delete(membership)
+    db_session.commit()
+
+    return {
+        "msg": "User removed successfully",
+        "user_id": user_id,
+        "list_id": list_id
     }

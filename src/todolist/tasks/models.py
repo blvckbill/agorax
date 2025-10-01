@@ -28,6 +28,7 @@ class TodolistTask(Base, TimeStampMixin):
 
     id = Column(Integer, primary_key=True)
     list_id = Column(Integer, ForeignKey("todolist.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("todolist_user.id"), nullable=False)
     task_title = Column(String, nullable=False)
     task_details = Column(Text, nullable=True)
     due_date = Column(Date, nullable=True)
@@ -35,6 +36,7 @@ class TodolistTask(Base, TimeStampMixin):
     is_completed = Column(Boolean, default=False)
     is_starred = Column(Boolean, default=False)
 
+    user = relationship("TodolistUser", back_populates="task")
     todolist = relationship("Todolist", back_populates="task")
 
 class TodolistMembers(Base, TimeStampMixin):
@@ -96,11 +98,13 @@ class TodotaskUpdate(ToDoListBase):
     is_completed: bool
     is_starred: bool
 
+class TodolistWithRole(TodolistRead):
+    user_role: str
 
 class TodolistPagination(Pagination):
     """Pydantic model for paginated todolist results."""
 
-    items: list[TodolistRead] = []
+    items: list[TodolistWithRole] = []
 
 
 class TodotaskPagination(Pagination):

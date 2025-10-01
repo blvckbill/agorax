@@ -13,9 +13,17 @@ from .models import (
     TodotaskUpdate,
     TodolistMembers
 )
-def get(*, db_session, list_id: int) -> Todolist:
-    """Returns a Todo list"""
-    return db_session.query(Todolist).filter(Todolist.id == list_id)
+def get_user_list(*, db_session, list_id: int, user_id: int) -> Todolist | None:
+    """Returns a todolist linked to current user"""
+    return (
+        db_session.query(Todolist)
+        .join(TodolistMembers, Todolist.id == TodolistMembers.todolist_id)
+        .filter(
+            Todolist.id == list_id,
+            TodolistMembers.user_id == user_id
+        )
+        .first()
+    )
 
 def get_all(*, db_session, user_id: int):
     """Returns all todolist linked to a user"""
@@ -53,14 +61,15 @@ def create_list(*, db_session, list_in: TodolistCreate, current_user) -> Todolis
     db_session.add(membership)
     db_session.commit()
     db_session.refresh(membership)
-    
+
     return todolist
 
-def add_task(*, db_session, task_in: TodotaskCreate, todolist) -> TodolistTask:
+def add_task(*, db_session, task_in: TodotaskCreate, todolist, current_user) -> TodolistTask:
     """Creates a task and adds it to a Todolist"""
     task = TodolistTask(
         **task_in.model_dump(),
-        list_id = todolist.id
+        list_id = todolist.id,
+        user_id = current_user.id
     )
 
     db_session.add(task)
@@ -104,4 +113,3 @@ def delete_tk(*, db_session, task_id: int):
     db_session.query(TodolistTask).filter(TodolistTask.id == task_id).delete()
     db_session.commit()
 
-def get_current_role(*, db_session, list_id: int):

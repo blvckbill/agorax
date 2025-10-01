@@ -7,8 +7,8 @@ from src.todolist.tasks.models import TodolistMembers
 from typing import Annotated
 
 ROLE_PERMISSIONS = {
-    "owner": {"invite", "remove", "edit_task", "delete_task", "view_task"},
-    "editor": {"edit_task", "delete_task", "view_task"},
+    "owner": {"invite", "remove", "add_task", "edit_task", "delete_task", "view_task"},
+    "editor": {"add_task", "edit_task", "delete_task", "view_task"},
     "viewer": {"view_task"},
 }
 
@@ -47,6 +47,8 @@ def require_permission(action: str):
     return dependency
 
 InvitePermission = Annotated[TodolistMembers, Depends(require_permission("invite"))]
+AddPermission = Annotated[TodolistMembers, Depends(require_permission("add_task"))]
 EditPermission = Annotated[TodolistMembers, Depends(require_permission("edit_task"))]
+ViewPermission = Annotated[TodolistMembers, Depends(require_permission("view_task"))]
 DeletePermission = Annotated[TodolistMembers, Depends(require_permission("delete_task"))]
 RemovePermission = Annotated[TodolistMembers, Depends(require_permission("remove"))]
