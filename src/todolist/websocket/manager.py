@@ -133,3 +133,5 @@ class WebSocketManager:
                         self.rooms[list_id].remove(socket)
 
         return callback
+
+ws_manager = WebSocketManager()

@@ -18,6 +18,8 @@ from src.todolist.database.service import PaginationParameters, paginate
 from src.todolist.auth.service import CurrentUser
 from src.todolist.auth.models import TodolistUser
 
+from src.todolist.websocket.manager import ws_manager
+
 from .models import (
     Todolist,
     TodolistTask,
@@ -124,7 +126,7 @@ def create_todolist(db_session: DbSession, list_in: TodolistCreate, current_user
 
 
 @task_router.post("/{list_id}/add-task")
-def add_tasks(
+async def add_tasks(
     db_session: DbSession,
     list_id: int,
     task_in: TodotaskCreate,
@@ -135,11 +137,18 @@ def add_tasks(
     if not todolist:
         raise HTTPException(status_code=404, detail={"message": "List not found"})
     
-    return add_task(db_session=db_session, task_in=task_in, todolist=todolist, current_user=current_user.id)
+    task = add_task(db_session=db_session, task_in=task_in, todolist=todolist, current_user=current_user.id)
+
+    await ws_manager.broadcast_task_event(
+        list_id,
+        {"action": "task_added", "task": task.dict()}
+    )
+
+    return task
 
 
 @task_router.put("/{list_id}/update-list")
-def update_todolist(db_session: DbSession, todolist_in: TodolistUpdate, list_id: int, current_user: CurrentUser, permission: EditPermission):
+async def update_todolist(db_session: DbSession, todolist_in: TodolistUpdate, list_id: int, current_user: CurrentUser, permission: EditPermission):
     """Updates a list"""
     todolist = get_user_list(db_session=db_session, list_id=list_id, user_id=current_user.id)
     if not todolist:
@@ -148,24 +157,38 @@ def update_todolist(db_session: DbSession, todolist_in: TodolistUpdate, list_id:
             detail={"message":"List not found"}
         )
     
-    return update_list(db_session=db_session, todolist=todolist, todolist_in=todolist_in)
+    list_update = update_list(db_session=db_session, todolist=todolist, todolist_in=todolist_in)
+
+    await ws_manager.broadcast_task_event(
+        list_id,
+        {"action": "list_title_update", "task": list_update.dict()}
+    )
+
+    return list_update
 
 
-@task_router.put("/{task_id}/update-task")
-def update_todotask(db_session: DbSession, todotask_in: TodotaskUpdate, task_id: int, current_user: CurrentUser, permission: EditPermission):
+@task_router.put("/{list_id}/{task_id}/update-task")
+async def update_todotask(db_session: DbSession, todotask_in: TodotaskUpdate, list_id: int, task_id: int, current_user: CurrentUser, permission: EditPermission):
     """Updates a task"""
-    todotask = db_session.query(TodolistTask).filter_by(id=task_id).first()
+    todotask = db_session.query(TodolistTask).filter_by(id=task_id, list_id=list_id).first()
     if not todotask:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"message":"A Todotask with this id does not exist."}
         )
     
-    return update_task(db_session=db_session, task=todotask, task_in=todotask_in)
+    task_update = update_task(db_session=db_session, task=todotask, task_in=todotask_in)
+    
+    await ws_manager.broadcast_task_event(
+        list_id,
+        {"action": "task_updated", "task": task_update.dict()}
+    )
+
+    return task_update
 
 
 @task_router.delete("/{list_id}/delete-list", response_model=None)
-def delete_list(db_session: DbSession, list_id: int,  current_user: CurrentUser, permission: DeletePermission):
+async def delete_list(db_session: DbSession, list_id: int,  current_user: CurrentUser, permission: DeletePermission):
     """Delete a List."""
     todolist = get_user_list(db_session=db_session, list_id=list_id, user_id=current_user.id)
     if not todolist:
@@ -175,11 +198,18 @@ def delete_list(db_session: DbSession, list_id: int,  current_user: CurrentUser,
         )
     delete_lt(db_session=db_session, list_id=list_id)
 
+    await ws_manager.broadcast_task_event(
+        list_id,
+        {"action": "task_added", "task": {"id":list_id}}
+    )
 
-@task_router.delete("/{task_id}/delete-task", response_model=None)
-def delete_task(db_session: DbSession, task_id: int,  permission: DeletePermission):
+    return {"msg": "Todolist deleted", "id": list_id}
+
+
+@task_router.delete("/{list_id}/{task_id}/delete-task", response_model=None)
+async def delete_task(db_session: DbSession, list_id: int, task_id: int,  permission: DeletePermission):
     """Delete a Task."""
-    todotask= db_session.query(TodolistTask).filter_by(id=task_id).first()
+    todotask= db_session.query(TodolistTask).filter_by(id=task_id, list_id=list_id).first()
     if not todotask:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -187,11 +217,18 @@ def delete_task(db_session: DbSession, task_id: int,  permission: DeletePermissi
         )
     delete_tk(db_session=db_session, task_id=task_id)
 
+    await ws_manager.broadcast_task_event(
+        list_id,
+        {"action": "task_added", "task": {"id":task_id}}
+    )
+
+    return {"msg": "Todotask deleted", "id": task_id}
+
 
 #==================== Views for multi user on a todolist ==========================
 
 @task_router.post("/{list_id}/invite-user")
-def invite_user(
+async def invite_user(
     db_session: DbSession, 
     list_id: int, 
     invitee_id:int, 
@@ -225,6 +262,17 @@ def invite_user(
     db_session.commit()
     db_session.refresh(new_member)
 
+    await ws_manager.broadcast_task_event(
+        list_id,
+        {
+            "action": "user_added",
+            "member": {
+                "user_id": new_member.user_id,
+                "role": new_member.role
+            }
+        }
+    )
+
     return {
         "msg": f"User {invitee.email} invited as {role}",
         "member_id": new_member.id,
@@ -233,7 +281,7 @@ def invite_user(
 
 
 @task_router.post("/{list_id}/remove-user")
-def remove_user(
+async def remove_user(
     db_session: DbSession, 
     list_id: int, 
     user_id:int, # user to be removed
@@ -255,6 +303,16 @@ def remove_user(
 
     db_session.delete(membership)
     db_session.commit()
+
+    await ws_manager.broadcast_task_event(
+        list_id,
+        {
+            "action": "user_removed",
+            "member": {
+                "user_id": membership.user_id
+            }
+        }
+    )
 
     return {
         "msg": "User removed successfully",
