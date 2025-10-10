@@ -19,6 +19,7 @@ from src.todolist.auth.service import CurrentUser
 from src.todolist.auth.models import TodolistUser
 
 from src.todolist.websocket.manager import ws_manager
+from src.todolist.services.rabbitmq.producer import rabbit_publisher
 
 from .models import (
     Todolist,
@@ -139,9 +140,9 @@ async def add_tasks(
     
     task = add_task(db_session=db_session, task_in=task_in, todolist=todolist, current_user=current_user.id)
 
-    await ws_manager.broadcast_task_event(
-        list_id,
-        {"action": "task_added", "task": task.dict()}
+    await rabbit_publisher.publish_sharded_event(
+        list_id=list_id,
+        message={"action": "task_added", "task": task.dict()}
     )
 
     return task
@@ -159,9 +160,9 @@ async def update_todolist(db_session: DbSession, todolist_in: TodolistUpdate, li
     
     list_update = update_list(db_session=db_session, todolist=todolist, todolist_in=todolist_in)
 
-    await ws_manager.broadcast_task_event(
-        list_id,
-        {"action": "list_title_update", "task": list_update.dict()}
+    await rabbit_publisher.publish_sharded_event(
+        list_id=list_id,
+        message={"action": "list_title_update", "task": list_update.dict()}
     )
 
     return list_update
@@ -179,9 +180,9 @@ async def update_todotask(db_session: DbSession, todotask_in: TodotaskUpdate, li
     
     task_update = update_task(db_session=db_session, task=todotask, task_in=todotask_in)
     
-    await ws_manager.broadcast_task_event(
-        list_id,
-        {"action": "task_updated", "task": task_update.dict()}
+    await rabbit_publisher.publish_sharded_event(
+        list_id=list_id,
+        message={"action": "task_updated", "task": task_update.dict()}
     )
 
     return task_update
@@ -198,9 +199,9 @@ async def delete_list(db_session: DbSession, list_id: int,  current_user: Curren
         )
     delete_lt(db_session=db_session, list_id=list_id)
 
-    await ws_manager.broadcast_task_event(
-        list_id,
-        {"action": "task_added", "task": {"id":list_id}}
+    await rabbit_publisher.publish_sharded_event(
+        list_id=list_id,
+        message={"action": "task_added", "task": {"id":list_id}}
     )
 
     return {"msg": "Todolist deleted", "id": list_id}
@@ -217,9 +218,9 @@ async def delete_task(db_session: DbSession, list_id: int, task_id: int,  permis
         )
     delete_tk(db_session=db_session, task_id=task_id)
 
-    await ws_manager.broadcast_task_event(
-        list_id,
-        {"action": "task_added", "task": {"id":task_id}}
+    await rabbit_publisher.publish_sharded_event(
+        list_id=list_id,
+        message={"action": "task_added", "task": {"id":task_id}}
     )
 
     return {"msg": "Todotask deleted", "id": task_id}
@@ -262,9 +263,9 @@ async def invite_user(
     db_session.commit()
     db_session.refresh(new_member)
 
-    await ws_manager.broadcast_task_event(
-        list_id,
-        {
+    await rabbit_publisher.publish_sharded_event(
+        list_id=list_id,
+        message={
             "action": "user_added",
             "member": {
                 "user_id": new_member.user_id,
@@ -304,9 +305,9 @@ async def remove_user(
     db_session.delete(membership)
     db_session.commit()
 
-    await ws_manager.broadcast_task_event(
-        list_id,
-        {
+    await rabbit_publisher.publish_sharded_event(
+        list_id=list_id,
+        message={
             "action": "user_removed",
             "member": {
                 "user_id": membership.user_id
