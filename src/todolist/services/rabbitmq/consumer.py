@@ -4,8 +4,8 @@ import asyncio
 import signal
 from datetime import datetime, timezone
 
-import aio_pika  # Async RabbitMQ client
-from src.todolist.services.redis_manager import RedisPubSubManager
+import aio_pika
+from src.todolist.websocket.manager import ws_manager
 
 RABBIT_URL = "amqp://guest:guest@localhost:5672/"
 EXCHANGE_NAME = "list_updates_sharded"
@@ -15,7 +15,6 @@ QUEUE_NAME = f"list_updates_shard_{SHARD_INDEX}"
 PREFETCH_COUNT = 1
 
 running = True
-redis_manager = RedisPubSubManager()
 
 # Graceful shutdown
 def handle_signal(signum, frame):
@@ -34,9 +33,7 @@ def shard_routing_key(shard_idx: int) -> str:
 # Process one message
 async def process_message(body_bytes: bytes):
     """
-    Business logic for one message:
-    - Deserialize JSON
-    - Publish to Redis via RedisPubSubManager
+    Deserialize message from RabbitMQ and broadcast via ws_manager.
     """
     try:
         msg = json.loads(body_bytes.decode())
@@ -45,9 +42,10 @@ async def process_message(body_bytes: bytes):
             print(f"[worker] Malformed message (missing list_id): {msg}")
             return
 
-        redis_channel = f"todolist_{list_id}"
-        await redis_manager.publish(redis_channel, json.dumps(msg))
-        print(f"[{datetime.now(timezone.utc)}] Published to Redis {redis_channel}")
+        # Broadcast using WebSocket manager (internally publishes to Redis)
+        await ws_manager.broadcast_task_event(list_id, msg)
+        print(f"[{datetime.now(timezone.utc).isoformat()}] Broadcasted event for list {list_id}")
+
     except Exception as e:
         print("[worker] Error processing message:", e)
 
@@ -56,8 +54,8 @@ async def process_message(body_bytes: bytes):
 async def main():
     global running
 
-    # Connect Redis manager
-    await redis_manager.connect()
+    # Connect Redis via ws_manager's pubsub
+    await ws_manager.pubsub.connect()
 
     # Connect to RabbitMQ
     while True:
