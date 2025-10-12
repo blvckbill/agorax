@@ -56,11 +56,7 @@ DEFAULT_STATIC_DIR = os.path.join(
 )
 STATIC_DIR = config("STATIC_DIR", default=DEFAULT_STATIC_DIR)
 
-# RabbitMQ 
-RABBIT_URL = config("RABBIT_URL", "amqp://guest:guest@localhost:5672/")
-EXCHANGE_NAME = config("EXCHANGE_NAME", "list_updates_sharded")
-NUM_SHARDS = config("NUM_SHARDS", "4")
-
-SHARD_INDEX = config("SHARD_INDEX", "0")
-QUEUE_NAME = config("QUEUE_NAME", f"list_updates_shard_{SHARD_INDEX}")
-PREFETCH_COUNT = config("PREFETCH_COUNT", "1")
+# ai
+HF_API_TOKEN = config("HF_API_TOKEN")
+HF_MODEL = config("HF_MODEL")
+HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"

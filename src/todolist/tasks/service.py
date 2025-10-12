@@ -17,7 +17,7 @@ def get_user_list(*, db_session, list_id: int, user_id: int) -> Todolist | None:
     """Returns a todolist linked to current user"""
     return (
         db_session.query(Todolist)
-        .join(TodolistMembers, Todolist.id == TodolistMembers.todolist_id)
+        .join(TodolistMembers, Todolist.id == TodolistMembers.list_id)
         .filter(
             Todolist.id == list_id,
             TodolistMembers.user_id == user_id

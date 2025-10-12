@@ -62,7 +62,7 @@ class AsyncRabbitPublisher:
             raise RuntimeError("RabbitMQ exchange not connected. Call connect() first.")
 
         routing_key = self._routing_key_for_list(list_id)
-        body = json.dumps(message).encode()
+        body = json.dumps(message, default=str).encode()
 
         await self.exchange.publish(
             aio_pika.Message(

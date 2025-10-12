@@ -1,6 +1,6 @@
 import logging
 from os import path
-
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import ValidationError
@@ -13,6 +13,8 @@ from src.todolist.database.core import SessionLocal
 
 from src.todolist.auth.views import auth_router
 from src.todolist.tasks.views import task_router
+from src.todolist.services.ai_nlp.views import ai_router
+from src.todolist.services.rabbitmq.producer import rabbit_publisher
 from src.todolist.config import STATIC_DIR
 
 # -------------------------------
@@ -107,15 +109,29 @@ api.add_middleware(ExceptionMiddleware)
 
 api.include_router(task_router, prefix="/tasks", tags=["Tasks"])
 api.include_router(auth_router, prefix="/auth", tags=["Auth"])
+api.include_router(ai_router, prefix="/ai", tags=["AI"])
 
 @api.get("/")
 def root():
     return {"message": "Welcome to Todolist API. Visit /docs for API documentation."}
 
+#lifespan
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- Startup ---
+    await rabbit_publisher.connect()
+    print("Application startup complete")
+
+    yield 
+
+    # --- Shutdown ---
+    await rabbit_publisher.close()
+    print("Application shutdown complete")
+
 # -------------------------------
 # Main ASGI app
 # -------------------------------
-app = FastAPI(exception_handlers={404: not_found}, openapi_url="")
+app = FastAPI(exception_handlers={404: not_found}, openapi_url="", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Mount API and frontend
