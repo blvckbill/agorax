@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.responses import StreamingResponse
 from starlette.staticfiles import StaticFiles
@@ -14,6 +15,7 @@ from src.todolist.database.core import SessionLocal
 from src.todolist.auth.views import auth_router
 from src.todolist.tasks.views import task_router
 from src.todolist.services.ai_nlp.views import ai_router
+from src.todolist.websocket.views import ws_router
 from src.todolist.services.rabbitmq.producer import rabbit_publisher
 from src.todolist.config import STATIC_DIR
 
@@ -105,11 +107,21 @@ async def db_session_middleware(request, call_next):
         session.close()
     return response
 
-api.add_middleware(ExceptionMiddleware)
-
+api.add_middleware(
+    ExceptionMiddleware
+    )
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 api.include_router(task_router, prefix="/tasks", tags=["Tasks"])
 api.include_router(auth_router, prefix="/auth", tags=["Auth"])
 api.include_router(ai_router, prefix="/ai", tags=["AI"])
+api.include_router(ws_router, prefix="", tags=["WebSockets"])
+
 
 @api.get("/")
 def root():

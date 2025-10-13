@@ -1,4 +1,5 @@
 import os
+import logging
 import json
 import asyncio
 import signal
@@ -6,6 +7,12 @@ from datetime import datetime, timezone
 
 import aio_pika
 from src.todolist.websocket.manager import ws_manager
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
 RABBIT_URL = "amqp://guest:guest@localhost:5672/"
 EXCHANGE_NAME = "list_updates_sharded"
@@ -19,7 +26,7 @@ running = True
 # Graceful shutdown
 def handle_signal(signum, frame):
     global running
-    print(f"[worker] Received signal {signum}, shutting down...")
+    logger.info(f"[worker] Received signal {signum}, shutting down...")
     running = False
 
 
@@ -39,15 +46,19 @@ async def process_message(body_bytes: bytes):
         msg = json.loads(body_bytes.decode())
         list_id = msg.get("list_id")
         if list_id is None:
-            print(f"[worker] Malformed message (missing list_id): {msg}")
+            logger.info(f"[worker] Malformed message (missing list_id): {msg}")
             return
 
-        # Broadcast using WebSocket manager (internally publishes to Redis)
-        await ws_manager.broadcast_task_event(list_id, msg)
-        print(f"[{datetime.now(timezone.utc).isoformat()}] Broadcasted event for list {list_id}")
+        # Broadcast using WebSocket manager
+        try:
+            await ws_manager.broadcast_task_event(list_id, msg)
+            logger.info(f"[{datetime.now(timezone.utc).isoformat()}] Broadcasted event for list {list_id}")
+        except Exception as e:
+            logger.info("[worker] Failed to broadcast to Redis:", e)
+
 
     except Exception as e:
-        print("[worker] Error processing message:", e)
+        logger.info("[worker] Error processing message:", e)
 
 
 # Main async worker
@@ -64,7 +75,7 @@ async def main():
             channel = await connection.channel()
             break
         except Exception as e:
-            print("[worker] RabbitMQ connection failed, retrying in 2s...", e)
+            logger.info("[worker] RabbitMQ connection failed, retrying in 2s...", e)
             await asyncio.sleep(2)
 
     # Declare exchange and queue
@@ -75,7 +86,7 @@ async def main():
 
     await channel.set_qos(prefetch_count=PREFETCH_COUNT)
 
-    print(f"[worker] Started. Serving shard {SHARD_INDEX} -> queue '{QUEUE_NAME}' bound to '{routing_key}'")
+    logger.info(f"[worker] Started. Serving shard {SHARD_INDEX} -> queue '{QUEUE_NAME}' bound to '{routing_key}'")
 
     # Message handler callback
     async with queue.iterator() as queue_iter:
@@ -88,7 +99,7 @@ async def main():
     # Close connections on shutdown
     await channel.close()
     await connection.close()
-    print("[worker] Stopped.")
+    logger.info("[worker] Stopped.")
 
 
 if __name__ == "__main__":

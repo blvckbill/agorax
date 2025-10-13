@@ -2,6 +2,7 @@
 import json
 import hashlib
 import uuid
+import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -11,7 +12,13 @@ RABBIT_URL = "amqp://guest:guest@localhost:5672/"
 EXCHANGE_NAME = "list_updates_sharded"
 NUM_SHARDS = 4
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()]
+)
 
+logger = logging.getLogger(__name__)
 class AsyncRabbitPublisher:
     """
     Async RabbitMQ publisher using aio_pika.
@@ -49,8 +56,10 @@ class AsyncRabbitPublisher:
 
     def shard_for_list(self, list_id: int) -> int:
         """Deterministic shard computation for a list_id."""
-        h = int(hashlib.sha256(str(list_id).encode()).hexdigest(), 16)
-        return h % self.num_shards
+        # h = int(hashlib.sha256(str(list_id).encode()).hexdigest(), 16)
+        # return h % self.num_shards
+        return 0
+
 
     def _routing_key_for_list(self, list_id: int) -> str:
         shard = self.shard_for_list(list_id)
@@ -58,10 +67,16 @@ class AsyncRabbitPublisher:
 
     async def publish_sharded_event(self, message: Dict[str, Any], list_id: int):
         """Publish message to the correct shard asynchronously."""
+        logger.info("[publisher] Attempting to publish to RabbitMQ...")
         if not self.exchange:
+            logger.info("[publisher] Exchange is None — call connect() first!")
             raise RuntimeError("RabbitMQ exchange not connected. Call connect() first.")
+        
+        if "list_id" not in message:
+            message["list_id"] = list_id
 
         routing_key = self._routing_key_for_list(list_id)
+        logger.info(f"[publisher] Using routing key: {routing_key}")
         body = json.dumps(message, default=str).encode()
 
         await self.exchange.publish(
@@ -72,5 +87,6 @@ class AsyncRabbitPublisher:
             ),
             routing_key=routing_key,
         )
+        logger.info("[publisher] Message published successfully.")
 
 rabbit_publisher = AsyncRabbitPublisher()
