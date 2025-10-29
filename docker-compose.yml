@@ -1,0 +1,50 @@
+services:
+  redis_server:
+    restart: always
+    image: "redis:5.0.10-alpine"
+    container_name: tiaago_redis_server
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+
+  tiaago_backend:
+    image: tiaago_backend_image
+    restart: on-failure
+    container_name: tiaago_backend_container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/home/app/web
+    ports:
+      - 8000:8000
+    env_file:
+      - .env
+    entrypoint: /home/app/web/entrypoint.sh
+
+  tiaago_celery_worker:
+    restart: on-failure
+    entrypoint: celery
+    image: tiaago_backend_image
+    container_name: tiaago_celery_container
+    command: -A talentsync_backend worker --loglevel=info --concurrency=4
+    volumes:
+      - .:/home/app/web
+    depends_on:
+      - redis_server
+      - tiaago_backend
+    env_file:
+      - .env
+
+  tiaago_celery_beat:
+    restart: on-failure
+    entrypoint: celery
+    image: tiaago_backend_image
+    container_name: tiaago_celery_beat_container
+    command: -A talentsync_backend beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/home/app/web
+    depends_on:
+      - redis_server
+      - tiaago_backend
+    env_file:
+      - .env
