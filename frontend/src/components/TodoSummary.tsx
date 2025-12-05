@@ -1,4 +1,4 @@
-import type { Todo } from "../types/todos";
+import type { Todo } from "../types/task.types";
 
 interface TodoSummaryProps {
     todos: Todo[];

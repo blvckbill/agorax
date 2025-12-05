@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Todo } from "../types/todos";
+import type { Todo } from "../types/task.types";
 import { dummyData } from "../data/todos";
 
 export default function useTodos () {

@@ -1,4 +1,4 @@
-import type { Todo } from "../types/todos";
+import type { Todo } from "../types/task.types";
 
 export const dummyData: Todo[] = [
     {

@@ -1,59 +1,58 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@/types/auth.types';
-import { authApi } from '@/services/authApi';
+import React, { createContext, useState, useEffect, type ReactNode } from 'react';
+import type { AuthContextType, User } from '../types/auth.types';
+import { api } from '../services/api';
 
-interface AuthContextType {
-  user: User | null;
-  setUser: (user: User | null) => void;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  logout: () => void;
-}
+// eslint-disable-next-line react-refresh/only-export-components
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token on mount
-    const token = authApi.getToken();
-    if (token) {
-      // Set a temporary user - in production, validate token with backend
-      setUser({ 
-        id: 0, 
-        email: '', 
-        token,
-        is_verified: true 
-      });
-      
-      // TODO: Fetch actual user data from backend
-      // authApi.getUser(userId).then(userData => setUser(userData));
-    }
-    setIsLoading(false);
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        try {
+          const userData = await api.getCurrentUser();
+          setUser(userData);
+          setToken(storedToken);
+        } catch (error) {
+          console.error('Failed to fetch user:', error);
+          localStorage.removeItem('token');
+          setToken(null);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
+  const login = async (email: string, password: string) => {
+    const response = await api.login(email, password);
+    localStorage.setItem('token', response.token);
+    setToken(response.token);
+    const userData = await api.getCurrentUser();
+    setUser(userData);
+  };
+
+  const register = async (email: string, password: string, firstName: string, lastName: string) => {
+    await api.register(email, password, firstName, lastName);
+    // Auto-login after registration
+    await login(email, password);
+  };
+
   const logout = () => {
-    authApi.clearToken();
+    localStorage.removeItem('token');
+    setToken(null);
     setUser(null);
   };
 
-  const value = {
-    user,
-    setUser,
-    isAuthenticated: !!user,
-    isLoading,
-    logout,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuthContext() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuthContext must be used within an AuthProvider');
-  }
-  return context;
-}
+  return (
+    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};

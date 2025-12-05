@@ -1,36 +1,16 @@
-import AddTodoForm from "./components/AddTodoForm";
-import TodoList from "./components/Todolist";
-import TodoSummary from "./components/TodoSummary";
-import useTodos from "./hooks/useTodos";
+import React from 'react';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import Dashboard from './components/layout/Dashboard';
 
-function App() {
-  const {
-    todos,
-    setTodoCompleted,
-    addTodo,
-    deleteTodo,
-    deleteAllCompletedTodos,
-  } = useTodos();
-
+const App: React.FC = () => {
   return (
-    <main className="py-10 h-screen space-y-2 overflow-y-auto">
-      <h1 className="font-bold text-3xl text-center">
-        Your Todos
-      </h1>
-      <div className="max-w-lg mx-auto bg-slate-100 rounded-md p-5 space-y-6">
-        <AddTodoForm onSubmit={addTodo}/> 
-        <TodoList 
-          todos={todos} 
-          onCompletedChange={setTodoCompleted} 
-          onDelete={deleteTodo}
-        />
-      </div>
-      <TodoSummary
-      todos={todos}
-      deleteAllCompleted={deleteAllCompletedTodos}
-      />
-    </main>
-  )
-}
+    <AuthProvider>
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    </AuthProvider>
+  );
+};
 
-export default App
+export default App;
