@@ -60,3 +60,15 @@ STATIC_DIR = config("STATIC_DIR", default=DEFAULT_STATIC_DIR)
 HF_API_TOKEN = config("HF_API_TOKEN")
 HF_MODEL = config("HF_MODEL")
 HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+
+#rabbitmq
+RABBITMQ_USER = config("RABBITMQ_USER")
+RABBITMQ_PASSWORD = config("RABBITMQ_PASSWORD")
+RABBITMQ_HOST = config("RABBITMQ_HOST")
+RABBITMQ_PORT = config("RABBITMQ_PORT")
+
+RABBIT_URL = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/"
+
+#redis
+REDIS_HOST = config("REDIS_HOST")
+REDIS_PORT = config("REDIS_PORT")

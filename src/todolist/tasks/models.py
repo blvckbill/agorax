@@ -111,3 +111,10 @@ class TodotaskPagination(Pagination):
     """Pydantic model for paginated todotask results."""
 
     items: list[TodotaskRead] = []
+
+class InviteUserPayload(ToDoListBase):
+    invitee_id: int
+    role: str
+
+class RemoveUserPayload(ToDoListBase):
+    user_id: int

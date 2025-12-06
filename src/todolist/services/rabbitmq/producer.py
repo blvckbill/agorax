@@ -7,8 +7,9 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 import aio_pika
+from src.todolist.config import RABBIT_URL
 
-RABBIT_URL = "amqp://guest:guest@localhost:5672/"
+
 EXCHANGE_NAME = "list_updates_sharded"
 NUM_SHARDS = 4
 

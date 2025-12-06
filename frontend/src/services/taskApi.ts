@@ -9,7 +9,7 @@ import type {
     RemoveUserResponse
 } from '../types/task.types';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 class TaskApiService {
   private baseUrl: string;

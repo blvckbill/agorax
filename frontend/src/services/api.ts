@@ -1,6 +1,6 @@
 import type { LoginResponse, RegisterResponse, User } from '../types/auth.types';
 
-const API_BASE_URL = 'http://localhost:8000'; // Update this to your backend URL
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 class ApiService {
   private baseUrl: string;

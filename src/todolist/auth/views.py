@@ -127,18 +127,6 @@ def resend_otp(db_session: DbSession, user_in: UserCreate, background_tasks: Bac
         status_code=status.HTTP_201_CREATED)
 
 
-@auth_router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: int, db_session: DbSession):
-    """Gets a user."""
-    user = get(db_session=db_session, user_id=user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"message":"User with this id was not found"}
-        )
-    return user
-
-
 @auth_router.post(
     "/login",
     response_model=UserAuthResponse
@@ -155,6 +143,19 @@ def login(
         content={"detail":"Invalid email or password"},
         status_code=status.HTTP_401_UNAUTHORIZED
     )
+
+
+@auth_router.get("/{user_id}", response_model=UserRead)
+def get_user(user_id: int, db_session: DbSession):
+    """Gets a user."""
+    user = get(db_session=db_session, user_id=user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message":"User with this id was not found"}
+        )
+    return user
+
     
 # @auth_router.post(
 #    "/logout"

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 import aio_pika
 from src.todolist.websocket.manager import ws_manager
+from src.todolist.config import RABBIT_URL
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -14,7 +15,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-RABBIT_URL = "amqp://guest:guest@localhost:5672/"
+
 EXCHANGE_NAME = "list_updates_sharded"
 NUM_SHARDS = 4
 SHARD_INDEX = 0

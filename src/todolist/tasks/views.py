@@ -31,7 +31,9 @@ from .models import (
     TodotaskUpdate,
     TodotaskPagination,
     TodolistPagination,
-    TodolistMembers
+    TodolistMembers,
+    InviteUserPayload,
+    RemoveUserPayload
 )
 
 from .service import (
@@ -232,13 +234,14 @@ async def delete_task(db_session: DbSession, list_id: int, task_id: int,  permis
 async def invite_user(
     db_session: DbSession, 
     list_id: int, 
-    invitee_id:int, 
-    current_user: CurrentUser, 
-    role: str,
+    payload: InviteUserPayload, 
+    current_user: CurrentUser,
     permission: InvitePermission
     ):
     """Invite a new user to the todolist (owners only)."""
 
+    invitee_id = payload.invitee_id
+    role = payload.role
     existing_member = (
         db_session.query(TodolistMembers)
         .filter_by(list_id=list_id, user_id=invitee_id)
@@ -285,12 +288,13 @@ async def invite_user(
 async def remove_user(
     db_session: DbSession, 
     list_id: int, 
-    user_id:int, # user to be removed
+    payload: RemoveUserPayload, # user to be removed
     current_user: CurrentUser, 
     permission: RemovePermission
     ):
     """Remove a user to the todolist (owners only)."""
 
+    user_id = payload.user_id
     membership = (
         db_session.query(TodolistMembers)
         .filter_by(list_id=list_id, user_id=user_id)
