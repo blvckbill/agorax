@@ -69,7 +69,7 @@ def add_task(*, db_session, task_in: TodotaskCreate, todolist, current_user) -> 
     task = TodolistTask(
         **task_in.model_dump(),
         list_id = todolist.id,
-        user_id = current_user.id
+        user_id = current_user
     )
 
     db_session.add(task)
