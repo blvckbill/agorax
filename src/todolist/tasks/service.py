@@ -62,6 +62,8 @@ def create_list(*, db_session, list_in: TodolistCreate, current_user) -> Todolis
     db_session.commit()
     db_session.refresh(membership)
 
+    todolist.user_role = "owner"
+
     return todolist
 
 def add_task(*, db_session, task_in: TodotaskCreate, todolist, current_user) -> TodolistTask:

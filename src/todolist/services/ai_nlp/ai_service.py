@@ -8,7 +8,7 @@ from typing import Optional
 
 import httpx
 import redis.asyncio as aioredis
-from src.todolist.config import HF_API_TOKEN, HF_API_URL, HF_MODEL
+from src.todolist.config import HF_API_TOKEN, HF_API_URL, HF_MODEL, REDIS_HOST, REDIS_PORT
 
 # local model fallback
 try:
@@ -20,7 +20,7 @@ except Exception:
 log = logging.getLogger(__name__)
 
 
-REDIS_URL = "redis://localhost:6379/0"
+REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 CACHE_TTL = 30      # seconds
 RATE_LIMIT_PER_MIN = 30  # requests per user/min
 CONCURRENCY_LIMIT = 8     # concurrent inferences

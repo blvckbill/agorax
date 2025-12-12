@@ -13,7 +13,7 @@ from starlette.staticfiles import StaticFiles
 from src.todolist.database.core import SessionLocal
 
 from src.todolist.auth.views import auth_router
-from src.todolist.tasks.views import task_router
+from src.todolist.tasks.views import task_router, user_router
 from src.todolist.services.ai_nlp.views import ai_router
 from src.todolist.websocket.views import ws_router
 from src.todolist.services.rabbitmq.producer import rabbit_publisher
@@ -119,6 +119,7 @@ api.add_middleware(
 )
 api.include_router(task_router, prefix="/tasks", tags=["Tasks"])
 api.include_router(auth_router, prefix="/auth", tags=["Auth"])
+api.include_router(user_router, prefix="/users", tags=["User"])
 api.include_router(ai_router, prefix="/ai", tags=["AI"])
 api.include_router(ws_router, prefix="", tags=["WebSockets"])
 

@@ -8,6 +8,7 @@ const CollaboratorsBadge: React.FC = () => {
   const [showMembers, setShowMembers] = useState(false);
 
   if (!currentList) return null;
+  console.log("ROLE IN LIST:", currentList.user_role);
 
   return (
     <>
@@ -21,9 +22,9 @@ const CollaboratorsBadge: React.FC = () => {
 
       {showMembers && (
         <MembersModal
-          listId={currentList.id}
-          userRole={currentList.user_role}
-          onClose={() => setShowMembers(false)}
+            listId={currentList.id}
+            userRole={currentList.user_role as 'owner' | 'editor' | 'viewer'} 
+            onClose={() => setShowMembers(false)}
         />
       )}
     </>

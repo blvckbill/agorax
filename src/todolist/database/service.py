@@ -3,26 +3,22 @@ import logging
 from fastapi import Query, Depends
 
 from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.orm import Query as sqlQuery
 from sqlalchemy_filters import apply_pagination
 
 from typing import Annotated
 
-from .core import get_class_by_tablename, DbSession
+from .core import DbSession
 
 log = logging.getLogger(__name__)
 
 def paginate(
-    db_session,
-    model: str,
+    query: sqlQuery,
     page: int = 1,
     items_per_page: int = 10
 ):
     """Functionality for pagination."""
-    model_cls = get_class_by_tablename(model)
-
     try:
-        query = db_session.query(model_cls)
-
         # apply pagination
         query, pagination = apply_pagination(
             query,
@@ -51,18 +47,16 @@ def paginate(
     }
 
 def pagination_parameters(
-    db_session: DbSession,
     page: int = Query(1, gt=0, lt=2147483647),
     items_per_page: int = Query(10, alias="itemsPerPage", gt=-2, lt=2147483647),
 ):
     return {
-        "db_session": db_session,
         "page": page,
         "items_per_page": items_per_page,
     }
 
 
 PaginationParameters = Annotated[
-    dict[str, int | DbSession],
+    dict[str, int],
     Depends(pagination_parameters),
 ]

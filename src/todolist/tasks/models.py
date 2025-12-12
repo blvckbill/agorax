@@ -60,6 +60,7 @@ class TodolistRead(ToDoListBase):
 
     id: int
     title: str
+    user_role: str
 
 class TodolistUpdate(ToDoListBase):
     """Pydantic model to update a list"""
@@ -91,15 +92,15 @@ class TodotaskRead(ToDoListBase):
 
 class TodotaskUpdate(ToDoListBase):
     """Pydabtic modek to update a Todotask"""
-    task_title: str
-    task_details: str
+    task_title: str | None = None
+    task_details: str | None = None
     due_date: str | None = None
     start_time: str | None = None
-    is_completed: bool
-    is_starred: bool
+    is_completed: bool| None = None
+    is_starred: bool | None = None
 
 class TodolistWithRole(TodolistRead):
-    user_role: str
+    user_role: str | None = "viewer"
 
 class TodolistPagination(Pagination):
     """Pydantic model for paginated todolist results."""
@@ -118,3 +119,16 @@ class InviteUserPayload(ToDoListBase):
 
 class RemoveUserPayload(ToDoListBase):
     user_id: int
+
+class UserSummary(ToDoListBase):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+
+class ListMemberResponse(ToDoListBase):
+    id: int | None = None 
+    user_id: int
+    list_id: int
+    role: str
+    user: UserSummary 

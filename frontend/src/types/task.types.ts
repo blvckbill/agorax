@@ -4,6 +4,36 @@ export interface TodoList {
   user_role: 'owner' | 'editor' | 'viewer';
 }
 
+export interface User {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface ListMember {
+  id: number; // The unique ID of the membership record (optional depending on DB)
+  user_id: number;
+  list_id: number;
+  role: 'owner' | 'editor' | 'viewer';
+  // Include the nested user object so we can show names/emails
+  user: User; 
+}
+
+export interface InviteUserInput {
+  email: string; // Changed from invitee_id to email for easier searching
+  role: 'editor' | 'viewer';
+}
+
+export interface InviteResponse {
+  message: string;
+  member: ListMember;
+}
+
+export interface RemoveUserResponse {
+  message: string;
+}
+
 export interface Task {
   id: number;
   list_id: number;

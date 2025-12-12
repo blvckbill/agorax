@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { X, UserPlus, Crown, Edit, Eye, Trash2, Shield } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, UserPlus, Crown, Edit, Eye, Trash2, Shield, Loader2 } from 'lucide-react';
 import { collaborationApi } from '../../services/collaborationApi';
 import InviteUserModal from './InviteUserModal';
+import type { ListMember } from '../../types/task.types';
 
 interface MembersModalProps {
   listId: number;
@@ -9,17 +10,26 @@ interface MembersModalProps {
   onClose: () => void;
 }
 
-// Mock members data - replace with real API call
-const mockMembers = [
-  { id: 1, user_id: 1, first_name: 'John', last_name: 'Doe', email: 'john@example.com', role: 'owner' },
-  { id: 2, user_id: 2, first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com', role: 'editor' },
-  { id: 3, user_id: 3, first_name: 'Bob', last_name: 'Johnson', email: 'bob@example.com', role: 'viewer' },
-];
-
 const MembersModal: React.FC<MembersModalProps> = ({ listId, userRole, onClose }) => {
-  const [members, setMembers] = useState(mockMembers);
+  const [members, setMembers] = useState<ListMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
   const [removingId, setRemovingId] = useState<number | null>(null);
+
+  const fetchMembers = useCallback(async () => {
+    try {
+      const data = await collaborationApi.getMembers(listId);
+      setMembers(data);
+    } catch (error) {
+      console.error('Failed to fetch members:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [listId]);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
 
   const handleRemove = async (userId: number) => {
     if (!window.confirm('Are you sure you want to remove this member?')) return;
@@ -27,7 +37,8 @@ const MembersModal: React.FC<MembersModalProps> = ({ listId, userRole, onClose }
     setRemovingId(userId);
     try {
       await collaborationApi.removeUser(listId, userId);
-      setMembers(members.filter(m => m.user_id !== userId));
+      // Optimistic update or refetch
+      setMembers(prev => prev.filter(m => m.user_id !== userId));
     } catch (error) {
       console.error('Failed to remove member:', error);
       alert('Failed to remove member');
@@ -38,14 +49,10 @@ const MembersModal: React.FC<MembersModalProps> = ({ listId, userRole, onClose }
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'owner':
-        return <Crown className="w-4 h-4 text-purple-600" />;
-      case 'editor':
-        return <Edit className="w-4 h-4 text-blue-600" />;
-      case 'viewer':
-        return <Eye className="w-4 h-4 text-gray-600" />;
-      default:
-        return <Shield className="w-4 h-4 text-gray-600" />;
+      case 'owner': return <Crown className="w-4 h-4 text-purple-600" />;
+      case 'editor': return <Edit className="w-4 h-4 text-blue-600" />;
+      case 'viewer': return <Eye className="w-4 h-4 text-gray-600" />;
+      default: return <Shield className="w-4 h-4 text-gray-600" />;
     }
   };
 
@@ -58,25 +65,24 @@ const MembersModal: React.FC<MembersModalProps> = ({ listId, userRole, onClose }
     return colors[role as keyof typeof colors] || colors.viewer;
   };
 
-  const canManageMembers = userRole === 'owner';
+  const canManageMembers = (userRole || '').toLowerCase() === 'owner';
 
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-blue-600" />
               <h2 className="text-lg font-semibold text-gray-900">List Members</h2>
             </div>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-lg transition"
-            >
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition">
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
 
+          {/* Body */}
           <div className="flex-1 overflow-y-auto p-4">
             {canManageMembers && (
               <button
@@ -88,58 +94,50 @@ const MembersModal: React.FC<MembersModalProps> = ({ listId, userRole, onClose }
               </button>
             )}
 
-            <div className="space-y-2">
-              {members.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                      {member.first_name[0]}{member.last_name[0]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900">
-                        {member.first_name} {member.last_name}
+            {isLoading ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {members.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                        {member.user.first_name[0]}{member.user.last_name[0]}
                       </div>
-                      <div className="text-sm text-gray-500 truncate">{member.email}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getRoleBadge(member.role)}`}>
-                      {getRoleIcon(member.role)}
-                      {member.role}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900">
+                          {member.user.first_name} {member.user.last_name}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate">{member.user.email}</div>
+                      </div>
                     </div>
 
-                    {canManageMembers && member.role !== 'owner' && (
-                      <button
-                        onClick={() => handleRemove(member.user_id)}
-                        disabled={removingId === member.user_id}
-                        className="p-2 hover:bg-red-100 rounded-lg transition disabled:opacity-50"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                    <div className="flex items-center gap-2">
+                      <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getRoleBadge(member.role)}`}>
+                        {getRoleIcon(member.role)}
+                        <span className="capitalize">{member.role}</span>
+                      </div>
 
-            {!canManageMembers && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  ℹ️ Only the list owner can manage members
-                </p>
+                      {canManageMembers && member.role !== 'owner' && (
+                        <button
+                          onClick={() => handleRemove(member.user_id)}
+                          disabled={removingId === member.user_id}
+                          className="p-2 hover:bg-red-100 rounded-lg transition disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
           <div className="p-4 border-t border-gray-200">
-            <button
-              onClick={onClose}
-              className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-            >
+            <button onClick={onClose} className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
               Close
             </button>
           </div>
@@ -150,6 +148,10 @@ const MembersModal: React.FC<MembersModalProps> = ({ listId, userRole, onClose }
         <InviteUserModal
           listId={listId}
           onClose={() => setShowInvite(false)}
+          onInviteSuccess={() => {
+            fetchMembers(); // Refresh the list after successful invite
+            // Optional: Keep modal open or show success toast
+          }}
         />
       )}
     </>

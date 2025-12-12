@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, type ReactNode } from 'react';
+/* eslint-disable react-hooks/exhaustive-deps */
+import { createContext, useState, useEffect, type ReactNode, type JSX } from 'react';
 import type { TodoList, Task, CreateListInput, CreateTaskInput, UpdateTaskInput, TaskFilter } from '../types/task.types';
 import { taskApi } from '../services/taskApi';
 import { useAuth } from '../hooks/useAuth';
@@ -11,14 +12,12 @@ interface TaskContextType {
   isLoading: boolean;
   error: string | null;
   
-  // List operations
   loadLists: () => Promise<void>;
   selectList: (listId: number) => Promise<void>;
   createList: (data: CreateListInput) => Promise<void>;
   updateList: (listId: number, title: string) => Promise<void>;
   deleteList: (listId: number) => Promise<void>;
   
-  // Task operations
   loadTasks: (filter?: TaskFilter) => Promise<void>;
   createTask: (data: CreateTaskInput) => Promise<void>;
   updateTask: (taskId: number, data: UpdateTaskInput) => Promise<void>;
@@ -26,14 +25,13 @@ interface TaskContextType {
   toggleTaskComplete: (taskId: number) => Promise<void>;
   toggleTaskStarred: (taskId: number) => Promise<void>;
   
-  // Filters
   setFilter: (filter: TaskFilter) => void;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
-export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element => {
   const { user } = useAuth();
   const [lists, setLists] = useState<TodoList[]>([]);
   const [currentList, setCurrentList] = useState<TodoList | null>(null);
@@ -42,44 +40,68 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load all lists on mount
+  // Load lists when user changes
   useEffect(() => {
     if (user) {
-      loadLists();
+      console.log('👤 User loaded, fetching lists for user:', user.id);
+      loadListsInternal();
+    } else {
+      console.log('❌ No user, clearing lists');
+      setLists([]);
+      setCurrentList(null);
+      setTasks([]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id
 
-  const loadLists = async () => {
+  const loadListsInternal = async () => {
     if (!user) return;
     
     try {
       setIsLoading(true);
+      console.log('📋 Fetching lists...');
       const response = await taskApi.getAllLists(user.id);
+      console.log('✅ Lists fetched:', response.items.length, 'lists');
       setLists(response.items);
       
-      // Auto-select first list if available
+      // Auto-select first list if available and none selected
       if (response.items.length > 0 && !currentList) {
-        await selectList(response.items[0].id);
+        console.log('📌 Auto-selecting first list:', response.items[0].title);
+        await selectListInternal(response.items[0].id);
       }
     } catch (err) {
+      console.error('❌ Failed to load lists:', err);
       setError(err instanceof Error ? err.message : 'Failed to load lists');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const selectList = async (listId: number) => {
+  const selectListInternal = async (listId: number) => {
     try {
       setIsLoading(true);
+      console.log('🎯 Selecting list:', listId);
       const list = await taskApi.getList(listId);
       setCurrentList(list);
-      await loadTasks('all');
+      
+      const response = await taskApi.getTasks(listId);
+      console.log('✅ Tasks loaded:', response.items.length, 'tasks');
+      setTasks(response.items);
+      setSelectedFilter('all');
     } catch (err) {
+      console.error('❌ Failed to load list:', err);
       setError(err instanceof Error ? err.message : 'Failed to load list');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Public API functions
+  const loadLists = async () => {
+    await loadListsInternal();
+  };
+
+  const selectList = async (listId: number) => {
+    await selectListInternal(listId);
   };
 
   const createList = async (data: CreateListInput) => {
@@ -87,7 +109,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(true);
       const newList = await taskApi.createList(data);
       setLists([...lists, newList]);
-      await selectList(newList.id);
+      await selectListInternal(newList.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create list');
       throw err;
@@ -112,13 +134,12 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const deleteList = async (listId: number) => {
     try {
       await taskApi.deleteList(listId);
-      setLists(lists.filter(l => l.id !== listId));
+      const remainingLists = lists.filter(l => l.id !== listId);
+      setLists(remainingLists);
       
-      // Select another list if current was deleted
       if (currentList?.id === listId) {
-        const remainingLists = lists.filter(l => l.id !== listId);
         if (remainingLists.length > 0) {
-          await selectList(remainingLists[0].id);
+          await selectListInternal(remainingLists[0].id);
         } else {
           setCurrentList(null);
           setTasks([]);

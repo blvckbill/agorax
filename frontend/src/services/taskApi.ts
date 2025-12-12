@@ -44,7 +44,7 @@ class TaskApiService {
   // Lists
   async getAllLists(userId: number, page: number = 1): Promise<PaginatedResponse<TodoList>> {
     return this.request<PaginatedResponse<TodoList>>(
-      `/tasks/${userId}/todolists?page=${page}&itemsPerPage=50`
+      `/users/${userId}/todolists?page=${page}&itemsPerPage=50`
     );
   }
 
@@ -100,7 +100,7 @@ class TaskApiService {
 
   async updateTask(listId: number, taskId: number, data: UpdateTaskInput): Promise<Task> {
     return this.request<Task>(`/tasks/${listId}/${taskId}/update-task`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
