@@ -36,7 +36,8 @@ from .models import (
     TodolistMembers,
     InviteUserPayload,
     RemoveUserPayload,
-    ListMemberResponse
+    ListMemberResponse,
+    UserSearchResponse
 )
 
 from .service import (
@@ -438,3 +439,30 @@ def get_list_members(
             all_members.append(member)
 
     return all_members
+
+
+@user_router.get("/search", response_model=list[UserSearchResponse])
+def search_users(
+    q: str,
+    db_session: DbSession,
+    current_user: CurrentUser
+):
+    """Search users by email or name."""
+    if len(q) < 2:
+        return []
+
+    # used f"%{q}%" to match substring anywhere (e.g. "john" matches "long_john")
+    users = (
+        db_session.query(TodolistUser)
+        .filter(
+            or_(
+                TodolistUser.email.ilike(f"%{q}%"),
+                TodolistUser.first_name.ilike(f"%{q}%"),
+                TodolistUser.last_name.ilike(f"%{q}%")
+            )
+        )
+        .limit(10)
+        .all()
+    )
+
+    return users

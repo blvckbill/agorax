@@ -12,7 +12,7 @@ class WebSocketManager {
       return;
     }
 
-    const wsUrl = `ws://host.docker.internal:8000/ws/${listId}?token=${token}`;
+    const wsUrl = `ws://localhost:8000/ws/${listId}?token=${token}`;
     
     this.ws = new WebSocket(wsUrl);
 

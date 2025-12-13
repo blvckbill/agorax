@@ -73,8 +73,8 @@ class TodotaskCreate(ToDoListBase):
 
     task_title: str
     task_details: str | None = None
-    due_date: str | None = None
-    start_time: str | None = None
+    due_date: date | None = None
+    start_time: time | None = None
 
 
 class TodotaskRead(ToDoListBase):
@@ -84,8 +84,8 @@ class TodotaskRead(ToDoListBase):
     list_id: int
     task_title: str
     task_details: str | None = None
-    due_date: str | None = None
-    start_time: str | None = None
+    due_date: date | None = None
+    start_time: time | None = None
     is_completed: bool
     is_starred: bool
 
@@ -94,8 +94,8 @@ class TodotaskUpdate(ToDoListBase):
     """Pydabtic modek to update a Todotask"""
     task_title: str | None = None
     task_details: str | None = None
-    due_date: str | None = None
-    start_time: str | None = None
+    due_date: date | None = None
+    start_time: time | None = None
     is_completed: bool| None = None
     is_starred: bool | None = None
 
@@ -132,3 +132,9 @@ class ListMemberResponse(ToDoListBase):
     list_id: int
     role: str
     user: UserSummary 
+
+class UserSearchResponse(ToDoListBase):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
