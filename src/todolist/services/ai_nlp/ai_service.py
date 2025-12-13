@@ -132,7 +132,7 @@ async def _call_hf_inference(prompt: str) -> str:
         data = resp.json()
     else:
         # standard HF Inference endpoint for model name
-        model_url = f"https://api-inference.huggingface.co/models/TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+        model_url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
         payload = {"inputs": prompt, "parameters": {"max_new_tokens": 12, "temperature": 0.6}}
         resp = await client.post(model_url, json=payload)
         resp.raise_for_status()
