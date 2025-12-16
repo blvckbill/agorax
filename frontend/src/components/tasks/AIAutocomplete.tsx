@@ -4,9 +4,10 @@ import { Sparkles } from 'lucide-react';
 interface AIAutocompleteProps {
   value: string;
   onSelect: (suggestion: string) => void;
+  listTitle?: string; 
 }
 
-const AIAutocomplete: React.FC<AIAutocompleteProps> = ({ value, onSelect }) => {
+const AIAutocomplete: React.FC<AIAutocompleteProps> = ({ value, onSelect, listTitle }) => { // 👈 Destructure it
   const [suggestion, setSuggestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,14 +21,17 @@ const AIAutocomplete: React.FC<AIAutocompleteProps> = ({ value, onSelect }) => {
       setIsLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(
-          `http://localhost:8000/api/v1/ai/suggest?prefix=${encodeURIComponent(value)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        
+        // 👇 UPDATE: Add context parameter to URL
+        // We use encodeURIComponent to handle spaces in list titles safely
+        const contextParam = listTitle ? `&context=${encodeURIComponent(listTitle)}` : '';
+        const url = `http://localhost:8000/api/v1/ai/suggest?prefix=${encodeURIComponent(value)}${contextParam}`;
+
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         
         if (response.ok) {
           const data = await response.json();
@@ -43,12 +47,13 @@ const AIAutocomplete: React.FC<AIAutocompleteProps> = ({ value, onSelect }) => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [value]);
+  }, [value, listTitle]); // 👈 Add listTitle to dependency array
 
   if (!suggestion || isLoading) {
     return null;
   }
 
+  // ... (Rest of the render logic stays the same) ...
   return (
     <div className="mt-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
       <div className="flex items-start gap-2">

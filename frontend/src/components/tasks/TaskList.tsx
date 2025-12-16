@@ -96,6 +96,7 @@ const TaskList: React.FC = () => {
             setEditingTask(null);
           }}
           editTask={editingTask}
+          listTitle={currentList.title} 
         />
       )}
     </>

@@ -57,9 +57,7 @@ DEFAULT_STATIC_DIR = os.path.join(
 STATIC_DIR = config("STATIC_DIR", default=DEFAULT_STATIC_DIR)
 
 # ai
-HF_API_TOKEN = config("HF_API_TOKEN")
-HF_MODEL = config("HF_MODEL")
-HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+GOOGLE_API_KEY = config("GOOGLE_API_KEY")
 
 #rabbitmq
 RABBITMQ_USER = config("RABBITMQ_USER")

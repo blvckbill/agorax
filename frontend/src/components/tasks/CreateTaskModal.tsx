@@ -7,9 +7,11 @@ import AIAutocomplete from './AIAutocomplete';
 interface CreateTaskModalProps {
   onClose: () => void;
   editTask?: Task | null;
+  listTitle?: string; // Defined here
 }
 
-const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, editTask }) => {
+// 👇 FIXED: Added listTitle to the destructuring here
+const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, editTask, listTitle }) => {
   const { createTask, updateTask } = useTasks();
   const [formData, setFormData] = useState({
     task_title: '',
@@ -100,9 +102,11 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, editTask }) 
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
               autoFocus
             />
+            {/* Now this variable actually exists! */}
             <AIAutocomplete
                 value={formData.task_title}
                 onSelect={(suggestion) => setFormData({ ...formData, task_title: suggestion })}
+                listTitle={listTitle} 
             />
           </div>
 
