@@ -31,10 +31,16 @@ interface TaskContextType {
 // eslint-disable-next-line react-refresh/only-export-components
 export const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
+const STORAGE_KEY_LAST_LIST = 'todolist_active_list_id';
+
 export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element => {
   const { user } = useAuth();
   const [lists, setLists] = useState<TodoList[]>([]);
+  
+  // NOTE: We cannot initialize 'currentList' from storage directly because we need the full object,
+  // not just the ID. We handle the restoration in 'loadListsInternal' instead.
   const [currentList, setCurrentList] = useState<TodoList | null>(null);
+  
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<TaskFilter>('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -50,8 +56,16 @@ export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element
       setLists([]);
       setCurrentList(null);
       setTasks([]);
+      localStorage.removeItem(STORAGE_KEY_LAST_LIST); // Clear storage on logout
     }
-  }, [user?.id]); // Only depend on user.id
+  }, [user?.id]);
+
+  // ✅ NEW: Persist the active list ID whenever it changes
+  useEffect(() => {
+    if (currentList) {
+      localStorage.setItem(STORAGE_KEY_LAST_LIST, currentList.id.toString());
+    }
+  }, [currentList]);
 
   const loadListsInternal = async () => {
     if (!user) return;
@@ -63,11 +77,29 @@ export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element
       console.log('✅ Lists fetched:', response.items.length, 'lists');
       setLists(response.items);
       
-      // Auto-select first list if available and none selected
-      if (response.items.length > 0 && !currentList) {
-        console.log('📌 Auto-selecting first list:', response.items[0].title);
-        await selectListInternal(response.items[0].id);
+      // ✅ UPDATED: Persistence Logic
+      // 1. Check if we have a saved ID in Local Storage
+      const savedListId = localStorage.getItem(STORAGE_KEY_LAST_LIST);
+      
+      // 2. Try to find that list in the fresh data
+      let targetList = null;
+      if (savedListId) {
+        targetList = response.items.find(l => l.id === Number(savedListId));
       }
+
+      // 3. Fallback: If no saved list (or it was deleted), use the first list
+      if (!targetList && response.items.length > 0) {
+        targetList = response.items[0];
+      }
+
+      // 4. Select the target list if found
+      if (targetList) {
+        console.log('📌 Selecting target list:', targetList.title);
+        // We call selectListInternal but we pass the object we already found
+        // to avoid a double network call if possible, or just call the ID version.
+        await selectListInternal(targetList.id);
+      }
+
     } catch (err) {
       console.error('❌ Failed to load lists:', err);
       setError(err instanceof Error ? err.message : 'Failed to load lists');
@@ -80,6 +112,8 @@ export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element
     try {
       setIsLoading(true);
       console.log('🎯 Selecting list:', listId);
+      
+      // Fetch fresh details for this list
       const list = await taskApi.getList(listId);
       setCurrentList(list);
       
@@ -138,6 +172,7 @@ export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element
       setLists(remainingLists);
       
       if (currentList?.id === listId) {
+        localStorage.removeItem(STORAGE_KEY_LAST_LIST); // Clear saved ID if we delete current list
         if (remainingLists.length > 0) {
           await selectListInternal(remainingLists[0].id);
         } else {

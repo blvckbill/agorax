@@ -44,7 +44,7 @@ const AIAutocomplete: React.FC<AIAutocompleteProps> = ({ value, onSelect, listTi
       } finally {
         setIsLoading(false);
       }
-    }, 500);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [value, listTitle]); // 👈 Add listTitle to dependency array

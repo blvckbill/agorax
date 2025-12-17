@@ -62,7 +62,6 @@ async def process_message(body_bytes: bytes):
         logger.info("[worker] Error processing message:", e)
 
 
-# Main async worker
 async def main():
     global running
 

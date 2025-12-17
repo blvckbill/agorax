@@ -1,9 +1,3 @@
-from fastapi import Depends
-
-
-from sqlalchemy_filters import apply_pagination
-from typing import Annotated
-
 from .models import (
     Todolist,
     TodolistTask,
@@ -106,9 +100,12 @@ def update_task(*, db_session, task: TodolistTask, task_in: TodotaskUpdate) -> T
     db_session.commit()
     return task
 
-def delete_lt(*, db_session, list_id: int):
-    db_session.query(Todolist).filter(Todolist.id == list_id).delete()
-    db_session.commit()
+def delete_lt(db_session, list_id: int):
+    list_to_delete = db_session.query(Todolist).filter(Todolist.id == list_id).first()
+    
+    if list_to_delete:
+        db_session.delete(list_to_delete)
+        db_session.commit()
 
 
 def delete_tk(*, db_session, task_id: int):

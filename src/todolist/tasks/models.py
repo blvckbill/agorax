@@ -1,5 +1,5 @@
 
-from datetime import date, time
+from datetime import date, datetime, time
 
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, select, func, Date, Time, Enum
 from sqlalchemy.orm import relationship
@@ -88,6 +88,8 @@ class TodotaskRead(ToDoListBase):
     start_time: time | None = None
     is_completed: bool
     is_starred: bool
+    created_at: datetime
+    updated_at: datetime
 
 
 class TodotaskUpdate(ToDoListBase):

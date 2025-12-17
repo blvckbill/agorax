@@ -1,7 +1,6 @@
-
 from fastapi import APIRouter, HTTPException, status
 
-from sqlalchemy import case, or_
+from sqlalchemy import desc, or_
 from fastapi import Query
 from sqlalchemy.orm import selectinload
 
@@ -35,17 +34,12 @@ from .models import (
     TodolistPagination,
     TodolistMembers,
     InviteUserPayload,
-    RemoveUserPayload,
     ListMemberResponse,
     UserSearchResponse
 )
 
 from .service import (
     get_user_list,
-    get_all,
-    get_completed,
-    get_starred,
-    get_tasks,
     create_list,
     add_task,
     update_list,
@@ -74,12 +68,10 @@ def get_list(
 ):
     """Get a single list and inject the user's role."""
     
-    # Fetch the list
     todolist = get_user_list(db_session=db_session, list_id=list_id, user_id=current_user.id)
     if not todolist:
         raise HTTPException(status_code=404, detail={"message": "List not found"})
 
-    # 🛑 FIX: Manually inject the role
     if todolist.user_id == current_user.id:
         todolist.user_role = "owner"
     else:
@@ -106,9 +98,23 @@ def get_all_tasks(db_session: DbSession, list_id: int, commons: PaginationParame
 
 
 @task_router.get("/{list_id}/tasks-completed", response_model=TodotaskPagination)
-def get_completed_tasks(db_session: DbSession, list_id: int, commons: PaginationParameters, current_user: CurrentUser, permission: ViewPermission):
-    """Returns tasks completed for a Todolist"""
-    completed_tasks = db_session.query(TodolistTask).filter_by(list_id=list_id, user_id=current_user.id, is_completed=True)
+def get_completed_tasks(
+    db_session: DbSession, 
+    list_id: int, 
+    commons: PaginationParameters, 
+    current_user: CurrentUser, 
+    permission: ViewPermission
+):
+    """Returns ALL completed tasks for a list, regardless of who created them."""
+    
+    completed_tasks = (
+        db_session.query(TodolistTask)
+        .filter(
+            TodolistTask.list_id == list_id,
+            TodolistTask.is_completed == True
+        )
+        .order_by(desc(TodolistTask.updated_at)) 
+    )
 
     return paginate(completed_tasks, **commons)
 
@@ -120,9 +126,7 @@ def get_all_todolists(
     commons: PaginationParameters
 ):
     """Returns all Todolists a user has access to, with the correct role injected."""
-    
-    # 1. Build the query (No .all() here!)
-    # We use selectinload to eagerly fetch the members so we can check roles efficiently
+
     query = (
         db_session.query(Todolist)
         .options(
@@ -131,41 +135,28 @@ def get_all_todolists(
         )
         .filter(
             or_(
-                Todolist.user_id == user_id,            # You own it
-                Todolist.members.any(user_id=user_id)   # You are a member
+                Todolist.user_id == user_id,
+                Todolist.members.any(user_id=user_id)  
             )
         )
     )
 
-    # 2. Paginate the query
-    # This executes the SQL and returns a Page object with .items (the list of Todolists)
     paginated_result = paginate(query, **commons)
 
-    # 3. Inject the 'user_role' into every list item
     for todo in paginated_result["items"]:
-        
-        # Case A: You are the Owner (based on Todolist table)
         if todo.user_id == user_id:
             todo.user_role = "owner"
-            
-        # Case B: You are a Member (based on TodolistMembers table)
         else:
-            # We search the 'members' list (which we loaded above) for your user_id
-            # We use 'next' to find the first match, or None if not found
             membership = next(
                 (m for m in todo.members if m.user_id == user_id), 
                 None
             )
             
             if membership:
-                # Accessing .role works perfectly with your Enum model!
-                # It returns "editor", "viewer", etc.
                 todo.user_role = membership.role 
             else:
-                # Fallback (should theoretically not happen due to the query filter)
                 todo.user_role = "viewer"
 
-    # 4. Return the result
     return paginated_result
 
 
@@ -320,8 +311,6 @@ async def invite_user(
     db_session.commit()
     db_session.refresh(new_member)
 
-    # Construct the response object that matches Frontend 'ListMember' interface
-    # We include the 'user' object manually so the UI can display the name immediately
     member_response = {
         "id": new_member.id,
         "user_id": new_member.user_id,
@@ -340,11 +329,10 @@ async def invite_user(
         list_id=list_id,
         message={
             "action": "user_added",
-            "member": member_response # Send full details to other clients too
+            "member": member_response
         }
     )
 
-    #  Returns structure matching 'InviteResponse' interface
     return {
         "message": f"User {invitee.email} invited as {role}",
         "member": member_response 
@@ -355,10 +343,8 @@ async def invite_user(
 async def remove_user(
     db_session: DbSession, 
     list_id: int, 
-    # Changed from Payload to Query param to match frontend URL: 
-    # `/tasks/${listId}/remove-user?user_id=${userId}`
     user_id: int = Query(..., description="The ID of the user to remove"),
-    current_user: CurrentUser = None, # Make sure to inject current_user for permission check
+    current_user: CurrentUser = None,
     permission: RemovePermission = None
 ):
     """Remove a user to the todolist (owners only)."""
@@ -387,7 +373,6 @@ async def remove_user(
         }
     )
 
-    # Returns structure matching 'RemoveUserResponse' interface
     return {
         "message": "User removed successfully",
     }
@@ -401,10 +386,9 @@ def get_list_members(
 ):
     """Fetch all members of a list, including the owner."""
     
-    # 1. Fetch the List (to get the Owner)
     todolist = (
         db_session.query(Todolist)
-        .options(selectinload(Todolist.user)) # Load owner details
+        .options(selectinload(Todolist.user)) 
         .filter(Todolist.id == list_id)
         .first()
     )
@@ -412,28 +396,24 @@ def get_list_members(
     if not todolist:
         raise HTTPException(status_code=404, detail="List not found")
 
-    # 2. Fetch the Collaborators
     members = (
         db_session.query(TodolistMembers)
-        .options(selectinload(TodolistMembers.user)) # Load user details
+        .options(selectinload(TodolistMembers.user)) 
         .filter(TodolistMembers.list_id == list_id)
         .all()
     )
-
-    # 3. Combine them manually
     all_members = []
 
-    # A. Add the Owner first
+
     owner_id = todolist.user_id
     all_members.append({
-        "id": None, # Owner doesn't have a row in 'members' table usually
+        "id": None,
         "user_id": owner_id,
         "list_id": todolist.id,
         "role": "owner",
-        "user": todolist.user # The nested user object
+        "user": todolist.user
     })
 
-    # B. Add the Collaborators
     for member in members:
         if member.user_id != owner_id:
             all_members.append(member)
@@ -450,8 +430,7 @@ def search_users(
     """Search users by email or name."""
     if len(q) < 2:
         return []
-
-    # used f"%{q}%" to match substring anywhere (e.g. "john" matches "long_john")
+    
     users = (
         db_session.query(TodolistUser)
         .filter(

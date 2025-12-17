@@ -20,13 +20,23 @@ services:
     env_file:
       - .env
     entrypoint: /home/app/web/entrypoint.sh
-  
+    depends_on:
+      rabbitmq_server:
+        condition: service_healthy
+      redis_server:
+        condition: service_started
+
   rabbitmq_server:
     restart: always
     image: "rabbitmq:management-alpine"
     container_name: todolist_rabbitmq_server
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   todolist_rabbitmq_worker:
     restart: on-failure
@@ -36,8 +46,11 @@ services:
     volumes:
       - .:/home/app/web
     depends_on:
-      - rabbitmq_server
-      - todolist_backend
-      - redis_server
+      rabbitmq_server:
+        condition: service_healthy
+      todolist_backend:
+        condition: service_started
+      redis_server:
+        condition: service_started
     env_file:
       - .env

@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 def paginate(
     query: sqlQuery,
     page: int = 1,
-    items_per_page: int = 10
+    items_per_page: int = 5
 ):
     """Functionality for pagination."""
     try:

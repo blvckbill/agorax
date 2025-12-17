@@ -17,11 +17,11 @@ async def get_current_user_ws(websocket: WebSocket) -> TodolistUser | None:
     """
     print(f"DEBUG: WebSocket connection attempt")
     
-    # 1. Try Query Param (Preferred for WS)
+    # Get token from Query Param first
     token = websocket.query_params.get("token")
     print(f"DEBUG: Token from query params: {token[:20] if token else 'None'}...")
     
-    # 2. Try Header (Fallback)
+    # Fallback to Header if query param fails
     if not token:
         auth_header = websocket.headers.get("Authorization")
         print(f"DEBUG: Auth header: {auth_header}")
@@ -29,7 +29,7 @@ async def get_current_user_ws(websocket: WebSocket) -> TodolistUser | None:
             token = auth_header[7:]
     
     if not token:
-        print("DEBUG: ❌ No token found!")
+        print("DEBUG: No token found!")
         return None
     
     session: Session = SessionLocal()
@@ -40,21 +40,21 @@ async def get_current_user_ws(websocket: WebSocket) -> TodolistUser | None:
         user_id = payload.get("sub")
         
         if not user_id:
-            print("DEBUG: ❌ No user_id in payload!")
+            print("DEBUG: No user_id in payload!")
             return None
         
         print(f"DEBUG: Getting user with ID: {user_id}")
         user = get(db_session=session, user_id=int(user_id))
         
         if user:
-            print(f"DEBUG: ✅ User found: {user.email}")
+            print(f"DEBUG: User found: {user.email}")
         else:
-            print(f"DEBUG: ❌ User not found in database!")
+            print(f"DEBUG: User not found in database!")
         
         return user
         
     except Exception as e:
-        print(f"DEBUG: ❌ Exception in get_current_user_ws: {type(e).__name__}: {str(e)}")
+        print(f"DEBUG: Exception in get_current_user_ws: {type(e).__name__}: {str(e)}")
         return None
     finally:
         session.close()
@@ -64,22 +64,20 @@ async def get_current_user_ws(websocket: WebSocket) -> TodolistUser | None:
 async def websocket_endpoint(websocket: WebSocket, list_id: int):
     print(f"DEBUG: WebSocket endpoint called for list {list_id}")
     
-    # 1. Authenticate (Handshake Phase)
     user = await get_current_user_ws(websocket)
     
     if not user:
-        print(f"DEBUG: ❌ Authentication failed, closing connection with 1008")
+        print(f"DEBUG: Authentication failed, closing connection with 1008")
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION) 
         return
     
-    print(f"DEBUG: ✅ User authenticated, accepting connection")
+    print(f"DEBUG: User authenticated, accepting connection")
     
-    # 2. Accept (Connection Phase)
     await websocket.accept()
     
     print(f"DEBUG: Connection accepted, connecting to manager")
     
-    # 3. Connect to Manager
+    # Connect to Manager
     await ws_manager.connect_user(list_id, websocket, user)
     
     try:

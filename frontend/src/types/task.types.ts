@@ -43,6 +43,8 @@ export interface Task {
   start_time: string | null; // ISO time string
   is_completed: boolean;
   is_starred: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateListInput {

@@ -31,8 +31,11 @@ _semaphore = asyncio.Semaphore(CONCURRENCY_LIMIT)
 # Configure Gemini
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
-    # Using 'flash' model for speed and low cost
-    _model = genai.GenerativeModel('gemini-1.5-flash')
+
+    _model = genai.GenerativeModel(
+        model_name="gemini-pro-latest"
+    )
+
 else:
     _model = None
     log.warning("⚠️ No GOOGLE_API_KEY found. AI service will run in Offline Mode.")
@@ -137,14 +140,14 @@ async def _generate(prefix: str, context: Optional[str]) -> str:
             lambda: _model.generate_content(
                 prompt,
                 generation_config=genai.types.GenerationConfig(
-                    max_output_tokens=10,
+                    max_output_tokens=4096,
                     temperature=0.3
                 )
             )
         )
         
         if response and response.text:
-            return response.text.strip()
+            return response.text.rstrip()
             
     except Exception as e:
         log.warning(f"⚠️ Gemini API failed: {e}")
@@ -158,20 +161,29 @@ def _postprocess(prefix: str, text: str) -> str:
     if not text:
         return ""
     
-    # Clean up response
-    s = text.replace(prefix, "").strip()
+    # 1. Basic cleanup
+    s = text.replace(prefix, "").strip() # Clean everything first
     s = re.sub(r'[\n\r]', ' ', s)
-    s = re.sub(r'^[\s\-\:\,\.\u2014]+', '', s)
+    s = re.sub(r'^[\-\:\,\.\u2014]+', '', s) # Note: \s is removed from regex
     
-    # Double check: if the model echoed the prefix, strip it
-    if s.lower().startswith(prefix.lower()):
-        s = s[len(prefix):].strip()
-
+    # 2. Limit word count
     words = s.split()
     if len(words) > _MAX_WORDS:
         words = words[:_MAX_WORDS]
+    
+    final_suggestion = " ".join(words).rstrip(" .,:;!?")
 
-    return " ".join(words).rstrip(" .,:;!?")
+    if not final_suggestion:
+        return ""
+
+    # 3. 🧠 Smart Spacing Logic
+    # If the user's input (prefix) DOES NOT end in a space...
+    # ...and our suggestion DOES NOT start with a space...
+    # -> WE MUST ADD A SPACE.
+    if not prefix.endswith(" ") and not final_suggestion.startswith(" "):
+        return " " + final_suggestion
+
+    return final_suggestion
 
 # -------------------- Public API --------------------
 async def suggest_completion(

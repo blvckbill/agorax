@@ -10,7 +10,6 @@ ai_router = APIRouter()
 async def suggest(
     current_user: CurrentUser, 
     prefix: str = Query(..., min_length=1),
-    # 👇 NEW PARAMETER: Accept context (list title) from URL
     context: str = Query(None, description="Title of the todo list") 
 ):
     user_id = getattr(current_user, "id", None) if current_user else None
