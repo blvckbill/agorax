@@ -2,14 +2,14 @@ services:
   redis_server:
     restart: always
     image: "redis:5.0.10-alpine"
-    container_name: todolist_redis_server
+    container_name: agorax_redis_server
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
 
-  todolist_backend:
-    image: todolist_backend_image
+  agorax_backend:
+    image: agorax_backend_image
     restart: on-failure
-    container_name: todolist_backend_container
+    container_name: agorax_backend_container
     build:
       context: .
       dockerfile: Dockerfile
@@ -29,7 +29,7 @@ services:
   rabbitmq_server:
     restart: always
     image: "rabbitmq:management-alpine"
-    container_name: todolist_rabbitmq_server
+    container_name: agorax_rabbitmq_server
     env_file:
       - .env
     healthcheck:
@@ -38,17 +38,17 @@ services:
       timeout: 5s
       retries: 5
 
-  todolist_rabbitmq_worker:
+  agorax_rabbitmq_worker:
     restart: on-failure
     entrypoint: ["python", "-m", "src.todolist.services.rabbitmq.consumer"]
-    image: todolist_backend_image
-    container_name: todolist_rabbitmq_worker   
+    image: agorax_backend_image
+    container_name: agorax_rabbitmq_worker   
     volumes:
       - .:/home/app/web
     depends_on:
       rabbitmq_server:
         condition: service_healthy
-      todolist_backend:
+      agorax_backend:
         condition: service_started
       redis_server:
         condition: service_started

@@ -9,8 +9,6 @@ export const useWebSocket = (listId: number | null) => {
   const { token } = useAuth();
   const { loadTasks } = useTasks();
 
-  // Keep a ref to loadTasks so we can use it inside the effect 
-  // without adding it to the dependency array (which causes reconnects)
   const loadTasksRef = useRef(loadTasks);
   
   // Update the ref whenever loadTasks changes
@@ -22,11 +20,11 @@ export const useWebSocket = (listId: number | null) => {
     if (!listId || !token) return;
 
     const handleMessage = (message: WebSocketMessage) => {
-      console.log('⚡ WebSocket message received:', message);
+      console.log(' WebSocket message received:', message);
       
       // Use the Ref to call the function
       if (['task_added', 'task_updated', 'task_deleted', 'user_added', 'user_removed'].includes(message.action)) {
-        console.log('🔄 Refreshing tasks due to real-time update...');
+        console.log(' Refreshing tasks due to real-time update...');
         loadTasksRef.current();
       }
     };
@@ -40,6 +38,6 @@ export const useWebSocket = (listId: number | null) => {
       wsManager.unsubscribe(listId.toString(), handleMessage);
       wsManager.disconnect();
     };
-    // 🛑 REMOVED currentList from here!
+    //  REMOVED currentList from here!
   }, [listId, token]); 
 };

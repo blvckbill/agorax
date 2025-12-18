@@ -24,22 +24,14 @@ const TaskList: React.FC = () => {
   // Enable real-time updates for current list
   useWebSocket(currentList?.id || null);
 
-  // 🧠 SORTING & FILTERING LOGIC
+  // SORTING & FILTERING LOGIC
   const displayedTasks = useMemo(() => {
     const filtered = [...tasks];
-
-    // 1. "All" Tab: 
-    //    - Hides completed tasks (they go to the Completed tab)
-    //    - Sorts by NEWEST FIRST (Descending ID: 3, 2, 1...)
     if (selectedFilter === 'all') {
       return filtered
         .filter(t => !t.is_completed)
         .sort((a, b) => b.id - a.id); 
     }
-
-    // 2. "Completed" Tab: 
-    //    - Shows only completed tasks
-    //    - Sorts by RECENTLY UPDATED (Most recently finished at top)
     if (selectedFilter === 'completed') {
       return filtered
         .filter(t => t.is_completed)
@@ -49,10 +41,6 @@ const TaskList: React.FC = () => {
           return dateB - dateA; 
         });
     }
-
-    // 3. "Starred" Tab: 
-    //    - Shows only starred tasks
-    //    - Sorts by RECENTLY UPDATED (Most recently starred/modified at top)
     if (selectedFilter === 'starred') {
       return filtered
         .filter(t => t.is_starred)
@@ -66,7 +54,6 @@ const TaskList: React.FC = () => {
     return filtered;
   }, [tasks, selectedFilter]);
 
-  // 🗑️ HANDLE LIST DELETION
   const handleDeleteList = async () => {
     if (!currentList) return;
     
@@ -104,7 +91,6 @@ const TaskList: React.FC = () => {
         {/* --- HEADER --- */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
-            {/* Title & Delete Button */}
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-gray-900">{currentList.title}</h1>
@@ -121,7 +107,6 @@ const TaskList: React.FC = () => {
               </p>
             </div>
             
-            {/* Top Right Actions */}
             <div className="flex items-center gap-3">
               <CollaboratorsBadge />
               <ActivityFeed />
@@ -136,7 +121,6 @@ const TaskList: React.FC = () => {
           </div>
         </div>
 
-        {/* --- TABS --- */}
         <div className="px-6 pt-4 bg-white border-b border-gray-200 flex-shrink-0 flex gap-6">
             <button
               onClick={() => setFilter('all')}
@@ -203,7 +187,6 @@ const TaskList: React.FC = () => {
         </div>
       </div>
 
-      {/* --- CREATE/EDIT MODAL --- */}
       {showCreateModal && (
         <CreateTaskModal
           onClose={() => {

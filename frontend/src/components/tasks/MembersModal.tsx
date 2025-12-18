@@ -149,8 +149,7 @@ const MembersModal: React.FC<MembersModalProps> = ({ listId, userRole, onClose }
           listId={listId}
           onClose={() => setShowInvite(false)}
           onInviteSuccess={() => {
-            fetchMembers(); // Refresh the list after successful invite
-            // Optional: Keep modal open or show success toast
+            fetchMembers();
           }}
         />
       )}

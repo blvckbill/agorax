@@ -12,16 +12,15 @@ export interface User {
 }
 
 export interface ListMember {
-  id: number; // The unique ID of the membership record (optional depending on DB)
+  id: number;
   user_id: number;
   list_id: number;
   role: 'owner' | 'editor' | 'viewer';
-  // Include the nested user object so we can show names/emails
   user: User; 
 }
 
 export interface InviteUserInput {
-  email: string; // Changed from invitee_id to email for easier searching
+  email: string;
   role: 'editor' | 'viewer';
 }
 
@@ -39,8 +38,8 @@ export interface Task {
   list_id: number;
   task_title: string;
   task_details: string | null;
-  due_date: string | null; // ISO date string
-  start_time: string | null; // ISO time string
+  due_date: string | null;
+  start_time: string | null; 
   is_completed: boolean;
   is_starred: boolean;
   created_at: string;

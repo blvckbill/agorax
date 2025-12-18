@@ -36,9 +36,6 @@ const STORAGE_KEY_LAST_LIST = 'todolist_active_list_id';
 export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element => {
   const { user } = useAuth();
   const [lists, setLists] = useState<TodoList[]>([]);
-  
-  // NOTE: We cannot initialize 'currentList' from storage directly because we need the full object,
-  // not just the ID. We handle the restoration in 'loadListsInternal' instead.
   const [currentList, setCurrentList] = useState<TodoList | null>(null);
   
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -60,7 +57,7 @@ export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element
     }
   }, [user?.id]);
 
-  // ✅ NEW: Persist the active list ID whenever it changes
+
   useEffect(() => {
     if (currentList) {
       localStorage.setItem(STORAGE_KEY_LAST_LIST, currentList.id.toString());
@@ -72,36 +69,30 @@ export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element
     
     try {
       setIsLoading(true);
-      console.log('📋 Fetching lists...');
+      console.log(' Fetching lists...');
       const response = await taskApi.getAllLists(user.id);
-      console.log('✅ Lists fetched:', response.items.length, 'lists');
+      console.log(' Lists fetched:', response.items.length, 'lists');
       setLists(response.items);
-      
-      // ✅ UPDATED: Persistence Logic
-      // 1. Check if we have a saved ID in Local Storage
+
       const savedListId = localStorage.getItem(STORAGE_KEY_LAST_LIST);
       
-      // 2. Try to find that list in the fresh data
+
       let targetList = null;
       if (savedListId) {
         targetList = response.items.find(l => l.id === Number(savedListId));
       }
 
-      // 3. Fallback: If no saved list (or it was deleted), use the first list
       if (!targetList && response.items.length > 0) {
         targetList = response.items[0];
       }
 
-      // 4. Select the target list if found
       if (targetList) {
-        console.log('📌 Selecting target list:', targetList.title);
-        // We call selectListInternal but we pass the object we already found
-        // to avoid a double network call if possible, or just call the ID version.
+        console.log(' Selecting target list:', targetList.title);
         await selectListInternal(targetList.id);
       }
 
     } catch (err) {
-      console.error('❌ Failed to load lists:', err);
+      console.error(' Failed to load lists:', err);
       setError(err instanceof Error ? err.message : 'Failed to load lists');
     } finally {
       setIsLoading(false);
@@ -111,18 +102,18 @@ export const TaskProvider = ({ children }: { children: ReactNode }): JSX.Element
   const selectListInternal = async (listId: number) => {
     try {
       setIsLoading(true);
-      console.log('🎯 Selecting list:', listId);
+      console.log(' Selecting list:', listId);
       
       // Fetch fresh details for this list
       const list = await taskApi.getList(listId);
       setCurrentList(list);
       
       const response = await taskApi.getTasks(listId);
-      console.log('✅ Tasks loaded:', response.items.length, 'tasks');
+      console.log(' Tasks loaded:', response.items.length, 'tasks');
       setTasks(response.items);
       setSelectedFilter('all');
     } catch (err) {
-      console.error('❌ Failed to load list:', err);
+      console.error(' Failed to load list:', err);
       setError(err instanceof Error ? err.message : 'Failed to load list');
     } finally {
       setIsLoading(false);

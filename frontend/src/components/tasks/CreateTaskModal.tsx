@@ -7,10 +7,9 @@ import AIAutocomplete from './AIAutocomplete';
 interface CreateTaskModalProps {
   onClose: () => void;
   editTask?: Task | null;
-  listTitle?: string; // Defined here
+  listTitle?: string;
 }
 
-// 👇 FIXED: Added listTitle to the destructuring here
 const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, editTask, listTitle }) => {
   const { createTask, updateTask } = useTasks();
   const [formData, setFormData] = useState({

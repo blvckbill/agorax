@@ -40,7 +40,7 @@ else:
     _model = None
     log.warning("⚠️ No GOOGLE_API_KEY found. AI service will run in Offline Mode.")
 
-# -------------------- 🧠 Local Fallback Engine --------------------
+# -------------------- Local Fallback Engine --------------------
 LOCAL_KNOWLEDGE = {
     "buy": ["groceries", "milk", "laptop", "tickets"],
     "go": ["to the gym", "to the market", "to work", "home"],
@@ -69,9 +69,8 @@ async def _get_redis():
     return _redis
 
 def _cache_key(prefix: str, context: Optional[str]) -> str:
-    # Context (List Title) is now part of the cache key
     base = prefix.strip().lower()
-    if context:
+    if context: # context now contains list title
         base += f":{context.strip().lower()}"
     return "ai:suggest:" + str(abs(hash(base)))
 
@@ -150,10 +149,10 @@ async def _generate(prefix: str, context: Optional[str]) -> str:
             return response.text.rstrip()
             
     except Exception as e:
-        log.warning(f"⚠️ Gemini API failed: {e}")
+        log.warning(f"Gemini API failed: {e}")
 
     # Fallback to Local Engine if Gemini fails
-    log.info(f"⚡ Using Local Fallback for: '{prefix}'")
+    log.info(f"Using Local Fallback for: '{prefix}'")
     return _get_local_suggestion(prefix)
 
 # -------------------- Post Processing --------------------
@@ -161,12 +160,12 @@ def _postprocess(prefix: str, text: str) -> str:
     if not text:
         return ""
     
-    # 1. Basic cleanup
+    # Basic cleanup
     s = text.replace(prefix, "").strip() # Clean everything first
     s = re.sub(r'[\n\r]', ' ', s)
-    s = re.sub(r'^[\-\:\,\.\u2014]+', '', s) # Note: \s is removed from regex
+    s = re.sub(r'^[\-\:\,\.\u2014]+', '', s)
     
-    # 2. Limit word count
+    # Limit word count
     words = s.split()
     if len(words) > _MAX_WORDS:
         words = words[:_MAX_WORDS]
@@ -176,10 +175,9 @@ def _postprocess(prefix: str, text: str) -> str:
     if not final_suggestion:
         return ""
 
-    # 3. 🧠 Smart Spacing Logic
     # If the user's input (prefix) DOES NOT end in a space...
     # ...and our suggestion DOES NOT start with a space...
-    # -> WE MUST ADD A SPACE.
+    # -> WE ADD A SPACE.
     if not prefix.endswith(" ") and not final_suggestion.startswith(" "):
         return " " + final_suggestion
 

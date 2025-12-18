@@ -10,8 +10,6 @@ const ActivityFeed: React.FC = () => {
 
   // Listen to WebSocket messages and convert to activities
   useEffect(() => {
-    // This would be connected to WebSocket messages
-    // For now, showing structure
   }, [currentList]);
 
   const getActivityIcon = (action: string) => {

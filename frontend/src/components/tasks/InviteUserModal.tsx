@@ -34,7 +34,6 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ listId, onClose, onIn
           setSearchResults(results);
         } catch (err) {
           console.error("Search failed", err);
-          // Don't show error to user immediately, just empty results
           setSearchResults([]);
         } finally {
           setIsSearching(false);
@@ -55,8 +54,8 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ listId, onClose, onIn
 
     try {
       await collaborationApi.inviteUser(listId, selectedUser.id, role);
-      onInviteSuccess(); // Refresh parent list
-      onClose(); // Close modal
+      onInviteSuccess();
+      onClose();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Failed to invite user:', err);
@@ -81,7 +80,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ listId, onClose, onIn
         </div>
 
         <div className="p-4 space-y-6 overflow-y-auto">
-          {/* 1. Search Section */}
+          {/* Search Section */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Find User
@@ -111,7 +110,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ listId, onClose, onIn
                           key={user.id}
                           onClick={() => {
                             setSelectedUser(user);
-                            setSearchQuery(''); // Clear search logic
+                            setSearchQuery(''); 
                             setSearchResults([]);
                           }}
                           className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 transition text-left"
@@ -155,7 +154,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ listId, onClose, onIn
             )}
           </div>
 
-          {/* 2. Role Selection (Your Enhanced UI) */}
+          {/* Role Selection (Your Enhanced UI) */}
           <div className={!selectedUser ? 'opacity-50 pointer-events-none' : ''}>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Permission Level

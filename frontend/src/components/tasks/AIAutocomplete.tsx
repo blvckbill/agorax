@@ -21,9 +21,6 @@ const AIAutocomplete: React.FC<AIAutocompleteProps> = ({ value, onSelect, listTi
       setIsLoading(true);
       try {
         const token = localStorage.getItem('token');
-        
-        // 👇 UPDATE: Add context parameter to URL
-        // We use encodeURIComponent to handle spaces in list titles safely
         const contextParam = listTitle ? `&context=${encodeURIComponent(listTitle)}` : '';
         const url = `http://localhost:8000/api/v1/ai/suggest?prefix=${encodeURIComponent(value)}${contextParam}`;
 
@@ -47,13 +44,12 @@ const AIAutocomplete: React.FC<AIAutocompleteProps> = ({ value, onSelect, listTi
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [value, listTitle]); // 👈 Add listTitle to dependency array
+  }, [value, listTitle]);
 
   if (!suggestion || isLoading) {
     return null;
   }
-
-  // ... (Rest of the render logic stays the same) ...
+  
   return (
     <div className="mt-2 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
       <div className="flex items-start gap-2">

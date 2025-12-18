@@ -1,4 +1,3 @@
-import bcrypt
 import logging
 
 from datetime import datetime, timezone
@@ -6,11 +5,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from fastapi.responses import JSONResponse
 
-from pydantic import ValidationError
-
 from .models import (
     UserCreate,
-    TodolistUser,
     UserRead,
     UserLogin,
     UserAuthResponse,
@@ -22,14 +18,11 @@ from .models import (
 from .service import (
     get,
     create,
-    get_current_user,
     get_by_email,
-    get_or_create,
     send_otp_user
 )
 
 from src.todolist.database.core import DbSession
-from src.todolist.auth.service import CurrentUser
 
 
 log = logging.getLogger(__name__)
@@ -156,15 +149,6 @@ def get_user(user_id: int, db_session: DbSession):
         )
     return user
 
-    
-# @auth_router.post(
-#    "/logout"
-# )
-
-# def logout(db_session: DbSession, current_user: CurrentUser):
-#     user = get(db_session=db_session, user_id=current_user.id)
-    
-#     db_session.close(user) TODO impement logout
 
 @auth_router.post("/forgot-password")
 def forgot_password(db_session: DbSession, user_in: UserCreate, background_tasks: BackgroundTasks):
