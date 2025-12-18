@@ -15,7 +15,7 @@ config = Config(ROOT_DIR / ".env")
 #jwt
 TODOLIST_JWT_SECRET = config("TODOLIST_JWT_SECRET", default=None)
 TODOLIST_JWT_ALG = config("TODOLIST_JWT_ALG", default="HS256")
-TODOLIST_JWT_EXP = config("TODLIST_JWT_EXP", cast=int, default=86400) #seconds
+TODOLIST_JWT_EXP = config("TODOLIST_JWT_EXP", cast=int, default=86400) #seconds
 
 
 
@@ -57,6 +57,16 @@ DEFAULT_STATIC_DIR = os.path.join(
 STATIC_DIR = config("STATIC_DIR", default=DEFAULT_STATIC_DIR)
 
 # ai
-HF_API_TOKEN = config("HF_API_TOKEN")
-HF_MODEL = config("HF_MODEL")
-HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+GOOGLE_API_KEY = config("GOOGLE_API_KEY")
+
+#rabbitmq
+RABBITMQ_USER = config("RABBITMQ_USER")
+RABBITMQ_PASSWORD = config("RABBITMQ_PASSWORD")
+RABBITMQ_HOST = config("RABBITMQ_HOST")
+RABBITMQ_PORT = config("RABBITMQ_PORT")
+
+RABBIT_URL = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/"
+
+#redis
+REDIS_HOST = config("REDIS_HOST")
+REDIS_PORT = config("REDIS_PORT")

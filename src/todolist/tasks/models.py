@@ -1,5 +1,5 @@
 
-from datetime import date, time
+from datetime import date, datetime, time
 
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, select, func, Date, Time, Enum
 from sqlalchemy.orm import relationship
@@ -60,6 +60,7 @@ class TodolistRead(ToDoListBase):
 
     id: int
     title: str
+    user_role: str
 
 class TodolistUpdate(ToDoListBase):
     """Pydantic model to update a list"""
@@ -72,8 +73,8 @@ class TodotaskCreate(ToDoListBase):
 
     task_title: str
     task_details: str | None = None
-    due_date: date | None
-    start_time: time | None
+    due_date: date | None = None
+    start_time: time | None = None
 
 
 class TodotaskRead(ToDoListBase):
@@ -87,19 +88,21 @@ class TodotaskRead(ToDoListBase):
     start_time: time | None = None
     is_completed: bool
     is_starred: bool
+    created_at: datetime
+    updated_at: datetime
 
 
 class TodotaskUpdate(ToDoListBase):
     """Pydabtic modek to update a Todotask"""
-    task_title: str
-    task_details: str
+    task_title: str | None = None
+    task_details: str | None = None
     due_date: date | None = None
     start_time: time | None = None
-    is_completed: bool
-    is_starred: bool
+    is_completed: bool| None = None
+    is_starred: bool | None = None
 
 class TodolistWithRole(TodolistRead):
-    user_role: str
+    user_role: str | None = "viewer"
 
 class TodolistPagination(Pagination):
     """Pydantic model for paginated todolist results."""
@@ -111,3 +114,29 @@ class TodotaskPagination(Pagination):
     """Pydantic model for paginated todotask results."""
 
     items: list[TodotaskRead] = []
+
+class InviteUserPayload(ToDoListBase):
+    invitee_id: int
+    role: str
+
+class RemoveUserPayload(ToDoListBase):
+    user_id: int
+
+class UserSummary(ToDoListBase):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+
+class ListMemberResponse(ToDoListBase):
+    id: int | None = None 
+    user_id: int
+    list_id: int
+    role: str
+    user: UserSummary 
+
+class UserSearchResponse(ToDoListBase):
+    id: int
+    email: str
+    first_name: str
+    last_name: str

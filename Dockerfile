@@ -1,52 +1,59 @@
-FROM python:3.11.4-slim-bullseye as builder
+# ---------- builder stage ----------
+FROM python:3.11-slim-bullseye AS builder
 
-# set work directory
-WORKDIR /usr/src/app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+WORKDIR /src
 
 # install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libmagic1 && \
-    apt-get clean && \
+    apt-get install -y --no-install-recommends \
+    build-essential gcc libpq-dev libffi-dev curl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
-# lint
-RUN pip install --upgrade pip
-COPY . /usr/src/app/
 
-# install python dependencies
-COPY . .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+# copy requirements and build wheels for deterministic installs
+COPY requirements.txt /src/requirements.txt
+RUN pip install --upgrade pip setuptools wheel \
+  && pip wheel --no-cache-dir --no-deps --wheel-dir /wheels -r /src/requirements.txt
 
-#########
-# FINAL #
-#########
+# copy source
+COPY . /src
 
-# pull official base image
-FROM python:3.11.4-slim-bullseye
+# ---------- final stage ----------
+FROM python:3.11-slim-bullseye
 
-# create directory for the app user
-RUN mkdir -p /home/app
-RUN apt-get update && apt-get install -y netcat libmagic-dev
-# create the appropriate directories
-ENV HOME=/home/app
-ENV APP_HOME=/home/app/web
-RUN mkdir $APP_HOME
-RUN mkdir $APP_HOME/staticfiles
-RUN mkdir $APP_HOME/static
-RUN mkdir $APP_HOME/media
-WORKDIR $APP_HOME
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    APP_HOME=/home/app/web \
+    HOME=/home/app
 
-# install dependencies
-COPY --from=builder /usr/src/app/wheels /wheels
-COPY --from=builder /usr/src/app/requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache /wheels/*
+# runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 libmagic1 netcat ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
-# copy project
-COPY . $APP_HOME
-RUN chmod +x  $APP_HOME/entrypoint.sh
+# create non-root user and app dir
+RUN groupadd -r app && useradd -r -g app -d ${APP_HOME} -s /sbin/nologin app \
+  && mkdir -p ${APP_HOME} && chown -R app:app ${APP_HOME}
+
+WORKDIR ${APP_HOME}
+
+# install wheels produced in builder stage (faster, deterministic)
+COPY --from=builder /wheels /wheels
+COPY --from=builder /src/requirements.txt ${APP_HOME}/requirements.txt
+
+RUN pip install --upgrade pip \
+  && pip install --no-cache-dir /wheels/* \
+  || pip install --no-cache-dir -r ${APP_HOME}/requirements.txt
+
+# copy app source
+COPY --chown=app:app . ${APP_HOME}
+RUN chmod +x ${APP_HOME}/entrypoint.sh
+
+# use non-root user
+USER app
+
+EXPOSE 8000
 
 ENTRYPOINT ["./entrypoint.sh"]

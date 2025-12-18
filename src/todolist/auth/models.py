@@ -80,12 +80,6 @@ class UserCreate(ToDoListBase):
     first_name: NameStr
     last_name: NameStr
 
-    # @field_validator("password", mode="before")
-    # @classmethod
-    # def hash(cls, v):
-    #     """hash password before storing"""
-    #     return hash_password(str(v))
-
 
 class UserRead(ToDoListBase):
     """Pydabtic model to read User."""

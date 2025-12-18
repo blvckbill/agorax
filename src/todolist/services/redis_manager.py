@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import json
+
+from src.todolist.config import REDIS_HOST, REDIS_PORT
 import redis.asyncio as redis
 
 from fastapi import WebSocket
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)
 class RedisPubSubManager:
     """Redis Pub/Sub manager for multiple rooms/users."""
 
-    def __init__(self, host="localhost", port=6379):
+    def __init__(self, host=REDIS_HOST, port=REDIS_PORT):
         self.redis_host = host
         self.redis_port = port
         self.redis: redis.Redis | None = None

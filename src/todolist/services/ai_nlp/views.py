@@ -7,9 +7,13 @@ ai_router = APIRouter()
 
 
 @ai_router.get("/suggest")
-async def suggest(current_user: CurrentUser, prefix: str = Query(..., min_length=1)):
-    # get user id if available for rate limiting
+async def suggest(
+    current_user: CurrentUser, 
+    prefix: str = Query(..., min_length=1),
+    context: str = Query(None, description="Title of the todo list") 
+):
     user_id = getattr(current_user, "id", None) if current_user else None
-    suggestion = await suggest_completion(prefix, user_id=user_id)
-    # optional: return 429 if rate-limited (we returned empty above)
+    
+    suggestion = await suggest_completion(prefix, user_id=user_id, context=context)
+    
     return {"input": prefix, "suggestion": suggestion}

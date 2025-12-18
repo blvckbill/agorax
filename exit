@@ -1,0 +1,23 @@
+[33mcommit b98f6c4492290d4c30d6c84813d6efb509d85eb2[m[33m ([m[1;32mdocker[m[33m)[m
+Author: Abdulroqeeb Bakre <walebakre10@gmail.com>
+Date:   Sat Nov 1 23:45:57 2025 +0100
+
+    chore: Docker setup Completed
+
+[33mcommit ca38212e6c67559deba2171912b83f3dda838359[m
+Author: Abdulroqeeb Bakre <walebakre10@gmail.com>
+Date:   Fri Oct 31 22:18:47 2025 +0100
+
+    docker wip
+
+[33mcommit acde31f9c9237aa4df11871caf23839cfa402756[m
+Author: Abdulroqeeb Bakre <walebakre10@gmail.com>
+Date:   Thu Oct 30 23:23:25 2025 +0100
+
+    docker setup wip
+
+[33mcommit b5d940cb68cce3c15240f56a0f0e2806e9166fec[m[33m ([m[1;31morigin/docker[m[33m)[m
+Author: Abdulroqeeb Bakre <walebakre10@gmail.com>
+Date:   Wed Oct 29 23:58:01 2025 +0100
+
+    docker setup

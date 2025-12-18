@@ -1,4 +1,3 @@
-import bcrypt
 import logging
 
 from datetime import datetime, timezone
@@ -6,11 +5,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from fastapi.responses import JSONResponse
 
-from pydantic import ValidationError
-
 from .models import (
     UserCreate,
-    TodolistUser,
     UserRead,
     UserLogin,
     UserAuthResponse,
@@ -22,14 +18,11 @@ from .models import (
 from .service import (
     get,
     create,
-    get_current_user,
     get_by_email,
-    get_or_create,
     send_otp_user
 )
 
 from src.todolist.database.core import DbSession
-from src.todolist.auth.service import CurrentUser
 
 
 log = logging.getLogger(__name__)
@@ -127,18 +120,6 @@ def resend_otp(db_session: DbSession, user_in: UserCreate, background_tasks: Bac
         status_code=status.HTTP_201_CREATED)
 
 
-@auth_router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: int, db_session: DbSession):
-    """Gets a user."""
-    user = get(db_session=db_session, user_id=user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"message":"User with this id was not found"}
-        )
-    return user
-
-
 @auth_router.post(
     "/login",
     response_model=UserAuthResponse
@@ -155,15 +136,19 @@ def login(
         content={"detail":"Invalid email or password"},
         status_code=status.HTTP_401_UNAUTHORIZED
     )
-    
-# @auth_router.post(
-#    "/logout"
-# )
 
-# def logout(db_session: DbSession, current_user: CurrentUser):
-#     user = get(db_session=db_session, user_id=current_user.id)
-    
-#     db_session.close(user) TODO impement logout
+
+@auth_router.get("/{user_id}", response_model=UserRead)
+def get_user(user_id: int, db_session: DbSession):
+    """Gets a user."""
+    user = get(db_session=db_session, user_id=user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"message":"User with this id was not found"}
+        )
+    return user
+
 
 @auth_router.post("/forgot-password")
 def forgot_password(db_session: DbSession, user_in: UserCreate, background_tasks: BackgroundTasks):

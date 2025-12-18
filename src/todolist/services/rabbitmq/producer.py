@@ -7,8 +7,9 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 import aio_pika
+from src.todolist.config import RABBIT_URL
 
-RABBIT_URL = "amqp://guest:guest@localhost:5672/"
+
 EXCHANGE_NAME = "list_updates_sharded"
 NUM_SHARDS = 4
 
@@ -39,7 +40,6 @@ class AsyncRabbitPublisher:
         """Establish connection, channel, and exchange."""
         self.connection = await aio_pika.connect_robust(self.rabbit_url)
         self.channel = await self.connection.channel()
-        # Optional QoS: one message at a time
         await self.channel.set_qos(prefetch_count=1)
         self.exchange = await self.channel.declare_exchange(
             self.exchange_name,
@@ -57,7 +57,7 @@ class AsyncRabbitPublisher:
     def shard_for_list(self, list_id: int) -> int:
         """Deterministic shard computation for a list_id."""
         # h = int(hashlib.sha256(str(list_id).encode()).hexdigest(), 16)
-        # return h % self.num_shards
+        # return h % self.num_shards #TODO
         return 0
 
 
