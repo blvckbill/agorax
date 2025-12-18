@@ -1,0 +1,21 @@
+# Ignore Git history (Heavy!)
+.git
+.gitignore
+
+# Ignore Python Virtual Environments (Crucial!)
+venv
+.venv
+env
+__pycache__
+*.pyc
+*.pyo
+
+# Ignore Frontend junk (If deploying backend)
+node_modules
+dist
+build
+frontend/node_modules
+
+# Ignore other heavy temporary files
+.DS_Store
+*.log
