@@ -44,7 +44,7 @@ DATABASE_ENGINE_POOL_SIZE = config("DATABASE_ENGINE_POOL_SIZE", cast=int, defaul
 DATABASE_ENGINE_POOL_TIMEOUT = config("DATABASE_ENGINE_POOL_TIMEOUT", cast=int, default=10)
 
 "otp"
-OTP_EXPIRY_TIME = config("OTP_EXPIRY_TIME")
+# OTP_EXPIRY_TIME = config("OTP_EXPIRY_TIME")
 
 #email config
 
