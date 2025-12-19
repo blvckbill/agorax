@@ -5,8 +5,8 @@ import type {
   ListMember
 } from '../types/task.types';
 
-// Update to match your FastAPI root_path
-const API_BASE_URL = 'http://localhost:8000/api/v1'; 
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = `${apiUrl}/api/v1`;
 
 class CollaborationApiService {
   private baseUrl: string;

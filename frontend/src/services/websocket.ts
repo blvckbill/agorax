@@ -12,8 +12,10 @@ class WebSocketManager {
       return;
     }
 
-    const wsUrl = `ws://localhost:8000/ws/${listId}?token=${token}`;
-    
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const wsBaseUrl = apiUrl.replace(/^http/, 'ws');
+    const wsUrl = `${wsBaseUrl}/ws/${listId}?token=${token}`;
+
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {

@@ -22,7 +22,8 @@ const AIAutocomplete: React.FC<AIAutocompleteProps> = ({ value, onSelect, listTi
       try {
         const token = localStorage.getItem('token');
         const contextParam = listTitle ? `&context=${encodeURIComponent(listTitle)}` : '';
-        const url = `http://localhost:8000/api/v1/ai/suggest?prefix=${encodeURIComponent(value)}${contextParam}`;
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const url = `${apiUrl}/api/v1/ai/suggest?prefix=${encodeURIComponent(value)}${contextParam}`;
 
         const response = await fetch(url, {
           headers: {
