@@ -18,8 +18,8 @@ from .models import (
 from .service import (
     get,
     create,
-    get_by_email,
-    send_otp_user
+    get_by_email
+    # send_otp_user
 )
 
 from src.todolist.database.core import DbSession
@@ -94,30 +94,30 @@ def verify_email(
     
     raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
-@auth_router.post("/resend-otp")
-def resend_otp(db_session: DbSession, user_in: UserCreate, background_tasks: BackgroundTasks):
-    """This endpoint resends otp if it expires"""
+# @auth_router.post("/resend-otp")
+# def resend_otp(db_session: DbSession, user_in: UserCreate, background_tasks: BackgroundTasks):
+#     """This endpoint resends otp if it expires"""
 
-    user = get_by_email(db_session=db_session, email=user_in.email)
-    if user.is_verified:
-        return JSONResponse(
-                {"detail": "User has already been verified. please proceed to login"},
-                status=status.HTTP_200_OK,
-            )
-    otp_instance = db_session.query(OtpModel).filter(OtpModel.user_id == user.id).first()
+#     user = get_by_email(db_session=db_session, email=user_in.email)
+#     if user.is_verified:
+#         return JSONResponse(
+#                 {"detail": "User has already been verified. please proceed to login"},
+#                 status=status.HTTP_200_OK,
+#             )
+#     otp_instance = db_session.query(OtpModel).filter(OtpModel.user_id == user.id).first()
 
-    if otp_instance and otp_instance.otp_expires > datetime.now(timezone.utc):
-        return JSONResponse(
-                {"detail": "An OTP has already been sent and is still valid."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+#     if otp_instance and otp_instance.otp_expires > datetime.now(timezone.utc):
+#         return JSONResponse(
+#                 {"detail": "An OTP has already been sent and is still valid."},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
     
-    send_otp_user(
-            db_session=db_session, user=user, background_tasks=background_tasks
-        )
+#     send_otp_user(
+#             db_session=db_session, user=user, background_tasks=background_tasks
+#         )
 
-    return JSONResponse({"detail":"OTP resent successfully, Please verify via OTP"},
-        status_code=status.HTTP_201_CREATED)
+#     return JSONResponse({"detail":"OTP resent successfully, Please verify via OTP"},
+#         status_code=status.HTTP_201_CREATED)
 
 
 @auth_router.post(
@@ -160,9 +160,9 @@ def forgot_password(db_session: DbSession, user_in: UserCreate, background_tasks
             detail=[{"msg": "A user with this email does not exist."}],
         )
 
-    send_otp_user(
-            db_session=db_session, user=user, background_tasks=background_tasks
-        )
+    # send_otp_user(
+    #         db_session=db_session, user=user, background_tasks=background_tasks
+    #     )
     
     return JSONResponse(
             {

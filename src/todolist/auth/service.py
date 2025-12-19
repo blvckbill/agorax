@@ -14,7 +14,7 @@ from starlette.requests import Request
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 from src.todolist.auth.models import TodolistUser, UserCreate, OtpCode, OtpModel
-from src.todolist.config import TODOLIST_JWT_SECRET, TODOLIST_JWT_ALG, OTP_EXPIRY_TIME
+from src.todolist.config import TODOLIST_JWT_SECRET, TODOLIST_JWT_ALG
 from .utils import (
     generate_random_string, 
     send_mail
@@ -48,59 +48,59 @@ def create(*, db_session, user_in: UserCreate) -> TodolistUser:
     return user
 
 
-def send_otp_user(*, db_session, user, background_tasks: BackgroundTasks):
-    otp_code = generate_random_string(5)
+# def send_otp_user(*, db_session, user, background_tasks: BackgroundTasks):
+#     otp_code = generate_random_string(5)
 
-    otp_expires = datetime.now(timezone.utc) + timedelta(seconds=OTP_EXPIRY_TIME)
+#     otp_expires = datetime.now(timezone.utc) + timedelta(seconds=OTP_EXPIRY_TIME)
 
-    try:
-        # Check if user already has an OTP record
-        otp_instance = (
-            db_session.query(OtpModel)
-            .filter(OtpModel.user_id == user.id)
-            .first()
-        )
+#     try:
+#         # Check if user already has an OTP record
+#         otp_instance = (
+#             db_session.query(OtpModel)
+#             .filter(OtpModel.user_id == user.id)
+#             .first()
+#         )
 
-        if otp_instance:
-            log.info(f"Updating OTP for user_id={user.id}")
-            otp_instance.otp_code = otp_code
-            otp_instance.otp_expires = otp_expires
-            otp_instance.is_used = False
-        else:
-            log.info(f"Creating new OTP for user_id={user.id}")
-            otp_instance = OtpModel(
-                otp_code=otp_code,
-                otp_expires=otp_expires,
-                user=user,
-            )
-            db_session.add(otp_instance)
+#         if otp_instance:
+#             log.info(f"Updating OTP for user_id={user.id}")
+#             otp_instance.otp_code = otp_code
+#             otp_instance.otp_expires = otp_expires
+#             otp_instance.is_used = False
+#         else:
+#             log.info(f"Creating new OTP for user_id={user.id}")
+#             otp_instance = OtpModel(
+#                 otp_code=otp_code,
+#                 otp_expires=otp_expires,
+#                 user=user,
+#             )
+#             db_session.add(otp_instance)
 
-        db_session.commit()
-        log.info(f"OTP {otp_code} committed to DB for user_id={user.id}")
+#         db_session.commit()
+#         log.info(f"OTP {otp_code} committed to DB for user_id={user.id}")
 
-    except Exception as e:
-        db_session.rollback()
-        log.error(f"Failed to create OTP for user_id={user.id}: {e}", exc_info=True)
-        raise
+#     except Exception as e:
+#         db_session.rollback()
+#         log.error(f"Failed to create OTP for user_id={user.id}: {e}", exc_info=True)
+#         raise
 
-    try:
-        # Add background task for sending mail
-        background_tasks.add_task(
-            send_mail,
-            email=user.email,
-            subject="One-Time Password (OTP) for ToDoList App",
-            body=(
-                f"Hello {user.first_name}, your OTP is {otp_code}. "
-                f"It expires in {OTP_EXPIRY_TIME} seconds. Do not share it with anyone."
-            ),
-        )
-        log.info(f"Queued OTP email for user_id={user.id}, email={user.email}")
+#     try:
+#         # Add background task for sending mail
+#         background_tasks.add_task(
+#             send_mail,
+#             email=user.email,
+#             subject="One-Time Password (OTP) for ToDoList App",
+#             body=(
+#                 f"Hello {user.first_name}, your OTP is {otp_code}. "
+#                 f"It expires in {IRY_TIME} seconds. Do not share it with anyone."
+#             ),
+#         )
+#         log.info(f"Queued OTP email for user_id={user.id}, email={user.email}")
 
-    except Exception as e:
-        log.error(f"Failed to queue OTP email for user_id={user.id}: {e}", exc_info=True)
-        raise
+#     except Exception as e:
+#         log.error(f"Failed to queue OTP email for user_id={user.id}: {e}", exc_info=True)
+#         raise
 
-    return otp_code
+#     return otp_code
 
 
 def get_or_create(*, db_session, user_in: UserCreate) -> TodolistUser:
