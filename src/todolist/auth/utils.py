@@ -15,22 +15,22 @@ def generate_random_string(length: int):
     return "".join(secrets.choice(chars) for _ in range(length))
 
 
-async def send_mail(
-        email: EmailStr,
-        subject: str,
-        body: str
-) -> JSONResponse:
-    """function to send email"""
+# async def send_mail(
+#         email: EmailStr,
+#         subject: str,
+#         body: str
+# ) -> JSONResponse:
+#     """function to send email"""
 
-    message = MessageSchema(
-        subject=subject,
-        recipients=[email],
-        body=body,
-        subtype=MessageType.plain
-    )
+#     message = MessageSchema(
+#         subject=subject,
+#         recipients=[email],
+#         body=body,
+#         subtype=MessageType.plain
+#     )
 
-    fm = FastMail(conf)
+#     fm = FastMail(conf)
 
-    fm.send_message(message)
+#     fm.send_message(message)
 
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "email has been sent"})
+#     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "email has been sent"})
