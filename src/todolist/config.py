@@ -67,14 +67,23 @@ STATIC_DIR = config("STATIC_DIR", default=DEFAULT_STATIC_DIR)
 # ai
 GOOGLE_API_KEY = config("GOOGLE_API_KEY", default=None)
 
-#rabbitmq
-RABBITMQ_USER = config("RABBITMQ_USER", default="guest")
-RABBITMQ_PASSWORD = config("RABBITMQ_PASSWORD", default="guest")
-RABBITMQ_HOST = config("RABBITMQ_HOST", default="localhost")
-RABBITMQ_PORT = config("RABBITMQ_PORT", default="5672")
-
-RABBIT_URL = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/"
+#rabbit
+RABBIT_URL = config("RABBITMQ_URL", default=None) 
+if not RABBIT_URL:
+    RABBITMQ_USER = config("RABBITMQ_USER", default="guest")
+    RABBITMQ_PASSWORD = config("RABBITMQ_PASSWORD", default="guest")
+    RABBITMQ_HOST = config("RABBITMQ_HOST", default="localhost")
+    RABBITMQ_PORT = config("RABBITMQ_PORT", default="5672")
+    
+    RABBIT_URL = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/"
 
 #redis
-REDIS_HOST = config("REDIS_HOST", default="localhost")
-REDIS_PORT = config("REDIS_PORT", default="6379")
+REDIS_URL = config("REDIS_URL", default=None)
+if REDIS_URL:
+    from urllib.parse import urlparse
+    _parsed = urlparse(REDIS_URL)
+    REDIS_HOST = _parsed.hostname
+    REDIS_PORT = _parsed.port
+else:
+    REDIS_HOST = config("REDIS_HOST", default="localhost")
+    REDIS_PORT = config("REDIS_PORT", default="6379")
