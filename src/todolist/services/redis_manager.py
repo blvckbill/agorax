@@ -2,7 +2,7 @@ import asyncio
 import logging
 import json
 
-from src.todolist.config import REDIS_HOST, REDIS_PORT
+from src.todolist.config import REDIS_HOST, REDIS_PORT, REDIS_URL
 import redis.asyncio as redis
 
 from fastapi import WebSocket
@@ -30,11 +30,14 @@ class RedisPubSubManager:
     async def _get_redis_connection(self) -> redis.Redis:
         """Establish or return the Redis connection."""
         if not self.redis:
-            self.redis = redis.Redis(
-                host=self.redis_host,
-                port=self.redis_port,
-                decode_responses=True
-            )
+            if REDIS_URL:
+                self.redis = redis.from_url(REDIS_URL, decode_responses=True)
+            else:
+                self.redis = redis.Redis(
+                    host=self.redis_host,
+                    port=self.redis_port,
+                    decode_responses=True
+                )
         return self.redis
 
 
