@@ -48,15 +48,15 @@ DATABASE_ENGINE_POOL_TIMEOUT = config("DATABASE_ENGINE_POOL_TIMEOUT", cast=int, 
 
 #email config
 
-conf = ConnectionConfig(
-    MAIL_USERNAME = config("EMAIL_HOST_USER"),
-    MAIL_PASSWORD = config("EMAIL_HOST_PASSWORD"),
-    MAIL_FROM = config("EMAIL_HOST_USER"),
-    MAIL_PORT = config("EMAIL_PORT"),
-    MAIL_SERVER = config("EMAIL_HOST"),
-    MAIL_STARTTLS = True,
-    MAIL_SSL_TLS = False,
-)
+# conf = ConnectionConfig(
+#     MAIL_USERNAME = config("EMAIL_HOST_USER"),
+#     MAIL_PASSWORD = config("EMAIL_HOST_PASSWORD"),
+#     MAIL_FROM = config("EMAIL_HOST_USER"),
+#     MAIL_PORT = config("EMAIL_PORT"),
+#     MAIL_SERVER = config("EMAIL_HOST"),
+#     MAIL_STARTTLS = True,
+#     MAIL_SSL_TLS = False,
+# )
 
 # static files
 DEFAULT_STATIC_DIR = os.path.join(
