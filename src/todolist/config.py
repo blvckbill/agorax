@@ -65,7 +65,7 @@ DEFAULT_STATIC_DIR = os.path.join(
 STATIC_DIR = config("STATIC_DIR", default=DEFAULT_STATIC_DIR)
 
 # ai
-GOOGLE_API_KEY = config("GOOGLE_API_KEY")
+GOOGLE_API_KEY = config("GOOGLE_API_KEY", default=None)
 
 #rabbitmq
 RABBITMQ_USER = config("RABBITMQ_USER")
